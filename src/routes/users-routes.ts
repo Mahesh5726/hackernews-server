@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { tokenMiddleware } from "./middleware/token-middleware";
 import { GetUsers, GetMe } from "../controllers/users/users-controllers";
 import { GetUsersError, GetMeError } from "../controllers/users/users-types";
+import { getPagination } from "../extras/pagination";
 
 export const usersRoutes = new Hono();
 
@@ -25,16 +26,20 @@ usersRoutes.get("/me", tokenMiddleware, async (context) => {
 
 usersRoutes.get("/", tokenMiddleware, async (context) => {
   try {
-    const page = parseInt(context.req.query("page") || "1", 10);
-    const limit = parseInt(context.req.query("limit") || "2", 10);
+    const { page, limit } = getPagination(context);
+
     const result = await GetUsers({ page, limit });
     if (!result) {
-      return context.json({ error: "Users not found" }, 404);
+      return context.json({ error: "No users found" }, 404);
     }
     return context.json(result, 200);
   } catch (error) {
     if (error === GetUsersError.USERS_NOT_FOUND) {
-      return context.json({ error: "Users not found" }, 404);
+      return context.json({ error: "No users found" }, 404);
+    }
+    if (error === GetUsersError.PAGE_BEYOND_LIMIT) {
+      return context.json(
+        { error: "No users found on the page requested]" }, 404);
     }
     if (error === GetUsersError.UNKNOWN) {
       return context.json({ error: "Unknown error" }, 500);
