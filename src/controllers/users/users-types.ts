@@ -1,19 +1,20 @@
-import type { User } from "@prisma/client"
+import type { User } from "@prisma/client";
 
 export type GetMeResult = {
-    user: User
-}
+  user: User;
+};
 
 export enum GetMeError {
-    USER_NOT_FOUND = "USER_NOT_FOUND",
-    UNKNOWN = "UNKNOWN",
+  USER_NOT_FOUND = "USER_NOT_FOUND",
+  UNKNOWN = "UNKNOWN",
 }
 
 export type GetUsersResult = {
-    users: User[]
-}
+  users: User[];
+};
 
 export enum GetUsersError {
-    USERS_NOT_FOUND = "USERS_NOT_FOUND",
-    UNKNOWN = "UNKNOWN",
+  USERS_NOT_FOUND = "USERS_NOT_FOUND",
+  PAGE_BEYOND_LIMIT = "PAGE_BEYOND_LIMIT", 
+  UNKNOWN = "UNKNOWN",
 }
