@@ -1,7 +1,9 @@
 import { prisma } from "../../extras/prisma";
 import {
+  DeleteLikeError,
   GetLikesError,
   LikePostError,
+  type DeleteLikeResult,
   type GetLikesResult,
   type LikePostResult,
 } from "./likes-types";
@@ -95,5 +97,56 @@ export const CreateLike = async (parameters: {
       throw e;
     }
     throw LikePostError.UNKNOWN;
+  }
+};
+
+export const DeleteLike = async (parameters: {
+  postId: string;
+  userId: string;
+}): Promise<DeleteLikeResult> => {
+  try {
+    const { postId, userId } = parameters;
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+    });
+    if (!post) {
+      throw DeleteLikeError.POST_NOT_FOUND;
+    }
+
+    const like = await prisma.like.findUnique({
+      where: {
+        postId_userId: {
+          postId,
+          userId,
+        },
+      },
+    });
+    if (!like) {
+      throw DeleteLikeError.LIKE_NOT_FOUND;
+    }
+    if (like.userId !== userId) {
+      throw DeleteLikeError.USER_NOT_FOUND;
+    }
+
+    await prisma.like.delete({
+      where: {
+        postId_userId: {
+          postId,
+          userId,
+        },
+      },
+    });
+
+    return { message: "Unliked Post!" };
+  } catch (e) {
+    console.error(e);
+    if (
+      e === DeleteLikeError.POST_NOT_FOUND ||
+      e === DeleteLikeError.LIKE_NOT_FOUND ||
+      e === DeleteLikeError.USER_NOT_FOUND
+    ) {
+      throw e;
+    }
+    throw DeleteLikeError.UNKNOWN;
   }
 };

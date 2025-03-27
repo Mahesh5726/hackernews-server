@@ -2,9 +2,11 @@ import { Hono } from "hono";
 import { tokenMiddleware } from "./middleware/token-middleware";
 import {
   GetLikes,
-  CreateLike
+  CreateLike,
+  DeleteLike,
 } from "../controllers/likes/likes-controllers";
 import {
+  DeleteLikeError,
   GetLikesError,
   LikePostError,
 } from "../controllers/likes/likes-types";
@@ -12,7 +14,6 @@ import { getPagination } from "../extras/pagination";
 
 export const likesRoutes = new Hono();
 
-// Get all likes on a post
 likesRoutes.get("/on/:postId", tokenMiddleware, async (c) => {
   try {
     const postId = c.req.param("postId");
@@ -33,7 +34,6 @@ likesRoutes.get("/on/:postId", tokenMiddleware, async (c) => {
   }
 });
 
-// Create a like on a post
 likesRoutes.post("/on/:postId", tokenMiddleware, async (c) => {
   try {
     const postId = c.req.param("postId");
@@ -48,3 +48,22 @@ likesRoutes.post("/on/:postId", tokenMiddleware, async (c) => {
   }
 });
 
+likesRoutes.delete("/on/:postId", tokenMiddleware, async (c) => {
+  try {
+    const postId = c.req.param("postId");
+    const userId = c.get("userId");
+    const result = await DeleteLike({ postId, userId });
+    return c.json(result, 200);
+  } catch (error) {
+    if (error === DeleteLikeError.POST_NOT_FOUND) {
+      return c.json({ error: "Post not found" }, 404);
+    }
+    if (error === DeleteLikeError.LIKE_NOT_FOUND) {
+      return c.json({ error: "Like not found" }, 404);
+    }
+    if (error === DeleteLikeError.USER_NOT_FOUND) {
+      return c.json({ error: "You can only remove your own likes" }, 403);
+    }
+    return c.json({ error: "Unknown error" }, 500);
+  }
+});
