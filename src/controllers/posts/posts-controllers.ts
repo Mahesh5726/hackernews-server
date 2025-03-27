@@ -1,5 +1,4 @@
 import type { Context } from "hono";
-import { getPagination } from "../../extras/pagination";
 import { prisma } from "../../extras/prisma";
 import {
   GetPostsError,
