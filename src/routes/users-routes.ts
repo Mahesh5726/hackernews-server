@@ -39,7 +39,7 @@ usersRoutes.get("/", tokenMiddleware, async (context) => {
     }
     if (error === GetUsersError.PAGE_BEYOND_LIMIT) {
       return context.json(
-        { error: "No users found on the page requested]" }, 404);
+        { error: "No users found on the page requested" }, 404);
     }
     if (error === GetUsersError.UNKNOWN) {
       return context.json({ error: "Unknown error" }, 500);
