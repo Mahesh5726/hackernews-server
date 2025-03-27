@@ -155,7 +155,13 @@ export const DeletePost = async (parameters: {
 
     return "Post deleted successfully";
   } catch (e) {
-    console.error(e);
-    throw DeletePostError.UNKNOWN;
+      console.error(e);
+      if (e === DeletePostError.POST_NOT_FOUND) {
+          throw DeletePostError.POST_NOT_FOUND;
+      }
+      if (e === DeletePostError.USER_NOT_FOUND) {
+          throw DeletePostError.USER_NOT_FOUND;
+      }
+      throw DeletePostError.UNKNOWN;
   }
 };
