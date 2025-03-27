@@ -4,10 +4,12 @@ import {
   GetPosts,
   GetUserPosts,
   CreatePost,
+  DeletePost,
 } from "../controllers/posts/posts-controllers";
 import {
   GetPostsError,
   CreatePostError,
+  DeletePostError,
 } from "../controllers/posts/posts-types";
 import { getPagination } from "../extras/pagination";
 
@@ -69,4 +71,19 @@ postsRoutes.post("/", tokenMiddleware, async (c) => {
   }
 });
 
-
+postsRoutes.delete("/:postId", tokenMiddleware, async (c) => {
+  try {
+    const userId = c.get("userId");
+    const postId = c.req.param("postId");
+    await DeletePost({ postId, userId });
+    return c.json({ message: "Post deleted successfully" }, 200);
+  } catch (error) {
+    if (error === DeletePostError.POST_NOT_FOUND) {
+      return c.json({ error: "Post not found!" }, 404);
+    }
+    if (error === DeletePostError.USER_NOT_FOUND) {
+      return c.json({ error: "User not found!" });
+    }
+    return c.json({ error: "Unknown error!" }, 500);
+  }
+});
