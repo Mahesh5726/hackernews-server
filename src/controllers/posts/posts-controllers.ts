@@ -9,12 +9,10 @@ import {
   type CreatePostResult,
 } from "./posts-types";
 
-export const GetPosts = async (
-  parameter: {
-    page: number;
-    limit: number;
-  }
-): Promise<GetPostsResult | Context> => {
+export const GetPosts = async (parameter: {
+  page: number;
+  limit: number;
+}): Promise<GetPostsResult | Context> => {
   try {
     const { page, limit } = parameter;
     const skip = (page - 1) * limit;
@@ -87,14 +85,14 @@ export const GetUserPosts = async (parameters: {
 
     return { posts };
   } catch (e) {
-      console.error(e);
-      if (e === GetPostsError.POSTS_NOT_FOUND) {
-          throw GetPostsError.POSTS_NOT_FOUND;
-      }
-      if (e === GetPostsError.PAGE_BEYOND_LIMIT) {
-          throw GetPostsError.PAGE_BEYOND_LIMIT;
-      }
-      throw GetPostsError.UNKNOWN;
+    console.error(e);
+    if (e === GetPostsError.POSTS_NOT_FOUND) {
+      throw GetPostsError.POSTS_NOT_FOUND;
+    }
+    if (e === GetPostsError.PAGE_BEYOND_LIMIT) {
+      throw GetPostsError.PAGE_BEYOND_LIMIT;
+    }
+    throw GetPostsError.UNKNOWN;
   }
 };
 
@@ -132,3 +130,32 @@ export const CreatePost = async (parameters: {
   }
 };
 
+export const DeletePost = async (parameters: {
+  postId: string;
+  userId: string;
+}): Promise<string> => {
+  try {
+    const { postId, userId } = parameters;
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post) {
+      throw DeletePostError.POST_NOT_FOUND;
+    }
+
+    if (post.userId !== userId) {
+      throw DeletePostError.USER_NOT_FOUND;
+    }
+
+    await prisma.post.delete({
+      where: { id: postId },
+    });
+
+    return "Post deleted successfully";
+  } catch (e) {
+    console.error(e);
+    throw DeletePostError.UNKNOWN;
+  }
+};
