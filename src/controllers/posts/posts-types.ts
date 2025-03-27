@@ -21,10 +21,6 @@ export enum CreatePostError {
     UNKNOWN = "UNKNOWN"
 }
 
-export type DeletePostResult = {
-    post: Post
-}
-
 export enum DeletePostError {
     USER_NOT_FOUND = "USER_NOT_FOUND",
     POST_NOT_FOUND = "POST_NOT_FOUND",
