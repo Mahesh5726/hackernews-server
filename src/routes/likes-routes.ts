@@ -44,6 +44,9 @@ likesRoutes.post("/on/:postId", tokenMiddleware, async (c) => {
     if (error === LikePostError.POST_NOT_FOUND) {
       return c.json({ error: "Post not found" }, 404);
     }
+    if (error === LikePostError.ALREADY_LIKED) {
+      return c.json({ error: "You have already liked this post" }, 400);
+    }
     return c.json({ error: "Unknown error" }, 500);
   }
 });
