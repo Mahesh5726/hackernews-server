@@ -50,7 +50,12 @@ export const GetComments = async (parameters: {
       skip,
       take: limit,
       include: {
-        user: true,
+        user: {
+          select: {
+            username: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -95,7 +100,12 @@ export const CreateComment = async (parameters: {
         userId,
       },
       include: {
-        user: true,
+        user: {
+          select: {
+            username: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -147,7 +157,12 @@ export const UpdateComment = async (parameters: {
       where: { id: commentId },
       data: { content },
       include: {
-        user: true,
+        user: {
+          select: {
+            username: true,
+            name: true,
+          },
+        },
       },
     });
 

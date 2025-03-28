@@ -33,7 +33,12 @@ export const GetPosts = async (parameter: {
       skip,
       take: limit,
       include: {
-        user: true,
+        user: {
+          select: {
+            username: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -78,7 +83,12 @@ export const GetUserPosts = async (parameters: {
       orderBy: { createdAt: "desc" },
       take: limit,
       include: {
-        user: true,
+        user: {
+          select: {
+            username: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -118,7 +128,12 @@ export const CreatePost = async (parameters: {
         content,
       },
       include: {
-        user: true,
+        user: {
+          select: {
+            username: true,
+            name: true,
+          },
+        },
       },
     });
 

@@ -37,13 +37,11 @@ export const GetUsers = async (parameter: {
     const { page, limit } = parameter;
     const skip = (page - 1) * limit;
 
-    // First we will check if there are any users at all
     const totalUsers = await prisma.user.count();
     if (totalUsers === 0) {
       throw GetUsersError.USERS_NOT_FOUND;
     }
 
-    // Then we will check if the requested page exists
     const totalPages = Math.ceil(totalUsers / limit);
     if (page > totalPages) {
       throw GetUsersError.PAGE_BEYOND_LIMIT;
