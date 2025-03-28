@@ -73,6 +73,25 @@ export const CreateLike = async (parameters: {
       throw LikePostError.POST_NOT_FOUND;
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) {
+      throw LikePostError.USER_NOT_FOUND;
+    }
+    const existingLike = await prisma.like.findUnique({
+      where: {
+        postId_userId: {
+          postId,
+          userId,
+        },
+      },
+    });
+
+    if (existingLike) {
+      throw LikePostError.ALREADY_LIKED;
+    }
+
     const like = await prisma.like.upsert({
       where: {
         postId_userId: {
@@ -94,6 +113,12 @@ export const CreateLike = async (parameters: {
   } catch (e) {
     console.error(e);
     if (e === LikePostError.POST_NOT_FOUND) {
+      throw e;
+    }
+    if (e === LikePostError.ALREADY_LIKED) {
+      throw e;
+    }
+    if (e === LikePostError.USER_NOT_FOUND) {
       throw e;
     }
     throw LikePostError.UNKNOWN;

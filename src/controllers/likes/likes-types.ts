@@ -19,7 +19,8 @@ export type LikePostResult = {
 export enum LikePostError {
     POST_NOT_FOUND = "POST_NOT_FOUND",
     USER_NOT_FOUND = "USER_NOT_FOUND",
-    UNKNOWN = "UNKNOWN"
+    UNKNOWN = "UNKNOWN",
+    ALREADY_LIKED = "ALREADY_LIKED"
 }
 
 export type DeleteLikeResult = {
