@@ -1,5 +1,5 @@
 import { createMiddleware } from "hono/factory";
-import jwt from "jsonwebtoken";
+import * as jwt from "jsonwebtoken";
 import { jwtSecretKey } from "../../../environment";
 
 //high-order function -> function having a function as a parameter which returns a function
