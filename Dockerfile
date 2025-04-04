@@ -1,37 +1,25 @@
-# Use Ubuntu as base image
-FROM ubuntu:22.04
-
-# Install Node.js v22.14.0 and npm
-RUN apt-get update && apt-get install -y curl ca-certificates gnupg && \
-  mkdir -p /etc/apt/keyrings && \
-  curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
-  NODE_MAJOR=22 && \
-  echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" > /etc/apt/sources.list.d/nodesource.list && \
-  apt-get update && \
-  apt-get install -y nodejs && \
-  node -v && \
-  npm -v && \
-  apt-get clean && \
-  rm -rf /var/lib/apt/lists/*
+FROM node:22.1.0
 
 WORKDIR /app
 
 # Copy only needed files
 COPY package*.json ./
-COPY tsconfig*.json ./
-COPY src ./src
+COPY tsconfig.json ./
+COPY package-lock.json ./
+COPY tsconfig.build.json ./
+COPY src ./src ./
+COPY prisma ./prisma ./
 
-# Copy Prisma folder only if it exists by copying everything, relying on .dockerignore
-COPY . .
 
 RUN npm install
 
 RUN if [ -f "./prisma/schema.prisma" ]; then npx prisma generate; else echo "Skipping prisma generate"; fi
 
-# Add database migration step
-RUN if [ -f "./prisma/schema.prisma" ]; then npx prisma migrate deploy; else echo "Skipping prisma migrate"; fi
+COPY . .
 
 RUN npm run build
+
+ENV NODE_ENV=production
 
 EXPOSE 3000
 
