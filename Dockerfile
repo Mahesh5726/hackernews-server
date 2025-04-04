@@ -1,41 +1,21 @@
-# 🛠 Build Stage
-FROM node:22.1.0 AS builder
-
-WORKDIR /app
-
-# Copy only necessary files first (improves caching)
-COPY package*.json ./
-COPY prisma ./prisma/
-
-# Install dependencies
-RUN npm install
-
-# Copy the rest of the source code
-COPY . .
-
-# Build TypeScript files
-RUN npm run build
-
-# 🏗 Production Stage
 FROM node:22.1.0
 
 WORKDIR /app
 
-# Copy built files and dependencies from the builder stage
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
+# Copy only needed files
+COPY package*.json ./
+COPY tsconfig*.json ./
+COPY src ./src
 
-# Set environment variables
-ENV NODE_ENV=production
+# Copy Prisma folder only if it exists by copying everything, relying on .dockerignore
+COPY . .
 
-# Ensure Prisma is ready
-RUN npx prisma generate
-RUN npx prisma migrate deploy  # Apply migrations
+RUN npm install
 
-# Expose port
+RUN if [ -f "./prisma/schema.prisma" ]; then npx prisma generate; else echo "Skipping prisma generate"; fi
+
+RUN npm run build
+
 EXPOSE 3000
 
-# Start the server
-CMD ["node", "dist/src/index.js"]
+CMD ["npm", "start"]
