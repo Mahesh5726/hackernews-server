@@ -1,5 +1,10 @@
-export const swaggerDocument = {
-  openapi: "3.0.0",
+import { Hono } from "hono";
+
+export const swaggerDocument = new Hono();
+
+swaggerDocument.get("/docs", (c) => {
+  return c.json({
+    openapi: "3.0.0",
   info: {
     title: "HackerNews API",
     version: "2.0.3",
@@ -26,4 +31,5 @@ export const swaggerDocument = {
     { name: "Likes", description: "Like management endpoints" },
     { name: "Comments", description: "Comment management endpoints" },
   ],
-};
+  });
+});
