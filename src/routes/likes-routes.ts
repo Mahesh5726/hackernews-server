@@ -1,20 +1,24 @@
 import { Hono } from "hono";
-import { tokenMiddleware } from "./middleware/token-middleware";
+import { sessionMiddleware } from "./middleware/session-middleware";
 import {
   GetLikes,
   CreateLike,
   DeleteLike,
+  GetLikesOnMe,
+  GetLikesOnUser,
 } from "../controllers/likes/likes-controllers";
 import {
   DeleteLikeError,
   GetLikesError,
+  GetLikesOnMeError,
   LikePostError,
+  GetLikesOnUserError,
 } from "../controllers/likes/likes-types";
 import { getPagination } from "../extras/pagination";
 
 export const likesRoutes = new Hono();
 
-likesRoutes.get("/on/:postId", tokenMiddleware, async (c) => {
+likesRoutes.get("/on/:postId", async (c) => {
   try {
     const postId = c.req.param("postId");
     const { page, limit } = getPagination(c);
@@ -34,10 +38,10 @@ likesRoutes.get("/on/:postId", tokenMiddleware, async (c) => {
   }
 });
 
-likesRoutes.post("/on/:postId", tokenMiddleware, async (c) => {
+likesRoutes.post("/on/:postId", sessionMiddleware, async (c) => {
   try {
     const postId = c.req.param("postId");
-    const userId = c.get("userId");
+    const userId = c.get("user").id;
     const result = await CreateLike({ postId, userId });
     return c.json(result, 201);
   } catch (error) {
@@ -51,10 +55,10 @@ likesRoutes.post("/on/:postId", tokenMiddleware, async (c) => {
   }
 });
 
-likesRoutes.delete("/on/:postId", tokenMiddleware, async (c) => {
+likesRoutes.delete("/on/:postId", sessionMiddleware, async (c) => {
   try {
     const postId = c.req.param("postId");
-    const userId = c.get("userId");
+    const userId = c.get("user").id;
     const result = await DeleteLike({ postId, userId });
     return c.json(result, 200);
   } catch (error) {
@@ -68,5 +72,47 @@ likesRoutes.delete("/on/:postId", tokenMiddleware, async (c) => {
       return c.json({ error: "You can only remove your own likes" }, 403);
     }
     return c.json({ error: "Unknown error" }, 500);
+  }
+});
+
+likesRoutes.get("/me", sessionMiddleware, async (c) => {
+  try {
+    const userId = c.get("user")?.id;
+    const result = await GetLikesOnMe({ userId });
+    return c.json(result, 200);
+  } catch (error) {
+    if (error === GetLikesOnMeError.LIKES_NOT_FOUND) {
+      return c.json({ error: "No likes found" }, 404);
+    }
+    if (error === GetLikesOnMeError.PAGE_NOT_FOUND) {
+      return c.json({ error: "No likes found on the requested page" }, 404);
+    }
+    if (error === GetLikesOnMeError.USER_NOT_FOUND) {
+      return c.json({ error: "User not found" }, 404);
+    }
+    return c.json({ error: "Unknown error" }, 500);
+  }
+});
+
+likesRoutes.get("/by/:slug", async (c) => {
+  try {
+    const { slug } = c.req.param();
+    const { page, limit } = getPagination(c);
+    const result = await GetLikesOnUser({ username: slug, page, limit });
+    return c.json(result, 200);
+  } catch (error) {
+    if (error === GetLikesOnMeError.LIKES_NOT_FOUND) {
+      return c.json({ error: "No likes found for this user" }, 404);
+    }
+    if (error === GetLikesOnUserError.USER_NOT_FOUND) {
+      return c.json({ error: "User not found" }, 404);
+    }
+    if (error === GetLikesOnUserError.PAGE_NOT_FOUND) {
+      return c.json({ error: "No likes found on the requested page" }, 404);
+    }
+    if (error === GetLikesOnUserError.POST_NOT_FOUND) {
+      return c.json({ error: "No likes found on the requested page" }, 404);
+    }
+    return c.json({ error: "Unknown error!" }, 500);
   }
 });

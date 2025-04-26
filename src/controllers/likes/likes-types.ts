@@ -34,6 +34,25 @@ export enum DeleteLikeError {
     UNKNOWN = "UNKNOWN"
 }
 
+export type GetLikesOnMeResult = {  
+  likes: Like[];
+};
 
+export enum GetLikesOnMeError {
+  LIKES_NOT_FOUND = "LIKES_NOT_FOUND",
+  PAGE_NOT_FOUND = "PAGE_NOT_FOUND",
+  USER_NOT_FOUND = "USER_NOT_FOUND",
+  UNKNOWN = "UNKNOWN",
+}
 
+export type GetLikesOnUserResult = {
+  likes: Like[];
+};
 
+export enum GetLikesOnUserError {
+  LIKES_NOT_FOUND = "LIKES_NOT_FOUND",
+  USER_NOT_FOUND = "USER_NOT_FOUND",
+  PAGE_NOT_FOUND = "PAGE_NOT_FOUND",
+  POST_NOT_FOUND = "POST_NOT_FOUND",
+  UNKNOWN = "UNKNOWN",
+}

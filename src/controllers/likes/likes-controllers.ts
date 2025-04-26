@@ -2,8 +2,12 @@ import { prisma } from "../../extras/prisma";
 import {
   DeleteLikeError,
   GetLikesError,
+  GetLikesOnMeError,
+  GetLikesOnUserError,
   LikePostError,
   type DeleteLikeResult,
+  type GetLikesOnMeResult,
+  type GetLikesOnUserResult,
   type GetLikesResult,
   type LikePostResult,
 } from "./likes-types";
@@ -28,12 +32,12 @@ export const GetLikes = async (parameters: {
       where: { postId },
     });
     if (totalLikes === 0) {
-      throw GetLikesError.LIKES_NOT_FOUND;
+      return { likes: [] }; // instead of throwing
     }
 
     const totalPages = Math.ceil(totalLikes / limit);
     if (page > totalPages) {
-      throw GetLikesError.PAGE_NOT_FOUND;
+      return { likes: [] };
     }
 
     const likes = await prisma.like.findMany({
@@ -80,6 +84,7 @@ export const CreateLike = async (parameters: {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      select: { id: true },
     });
     if (!user) {
       throw LikePostError.USER_NOT_FOUND;
@@ -185,3 +190,97 @@ export const DeleteLike = async (parameters: {
     throw DeleteLikeError.UNKNOWN;
   }
 };
+
+export const GetLikesOnMe = async (parameters: {
+  userId: string;
+}): Promise<GetLikesOnMeResult> => {
+  try {
+    const { userId } = parameters;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+      },
+    });
+    if (!user) {
+      throw GetLikesOnMeError.USER_NOT_FOUND;
+    }
+
+    const likes = await prisma.like.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return { likes };
+  } catch (e) {
+    console.error(e);
+    if (e === GetLikesOnMeError.LIKES_NOT_FOUND) {
+      throw e;
+    }
+    if (e === GetLikesOnMeError.PAGE_NOT_FOUND) {
+      throw e;
+    }
+    if (e === GetLikesOnMeError.USER_NOT_FOUND) {
+      throw e;
+    }
+    throw GetLikesOnMeError.UNKNOWN;
+  }
+};  
+
+export const GetLikesOnUser = async (parameters: {
+  username: string;
+  page: number;
+  limit: number;
+}): Promise<GetLikesOnUserResult> =>  {
+  try {
+    const { username, page, limit } = parameters;
+
+    if (page < 1 || limit < 1) {
+      throw new Error("Page or limit is below 1");
+    }
+
+    const skip = (page - 1) * limit;
+
+    const user = await prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+      },
+    });
+    if (!user) {
+      throw GetLikesOnUserError.USER_NOT_FOUND;
+    }     
+
+    const likes = await prisma.like.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" }, 
+      skip,
+      take: limit,
+      include: {
+        post: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+    });
+    return { likes };
+  } catch (e) { 
+    console.error(e);
+    if (e === GetLikesOnUserError.LIKES_NOT_FOUND) {
+      throw e;
+    }
+    if (e === GetLikesOnUserError.USER_NOT_FOUND) {
+      throw e;
+    } 
+    if (e === GetLikesOnUserError.PAGE_NOT_FOUND) {
+      throw e;
+    }
+    if (e === GetLikesOnUserError.POST_NOT_FOUND) {
+      throw e;
+    } 
+    throw GetLikesOnUserError.UNKNOWN;
+  }
+};  
+
