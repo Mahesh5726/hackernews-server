@@ -38,3 +38,37 @@ export enum DeleteCommentError {
   UNAUTHORIZED = "UNAUTHORIZED",
   UNKNOWN = "UNKNOWN",
 }
+
+export type GetCommentsOnPostsResult = {
+  comments: Comment[];
+};
+
+export enum GetCommentsOnPostsError {
+  PAGE_BEYOND_LIMIT = "PAGE_BEYOND_LIMIT",
+  POST_NOT_FOUND = "POST_NOT_FOUND",
+  COMMENTS_NOT_FOUND = "COMMENTS_NOT_FOUND",
+  UNKNOWN = "UNKNOWN",
+}
+
+export type GetCommentsOnMeResult = {
+  comments: Comment[];
+};
+
+export enum GetCommentsOnMeError {
+  COMMENTS_NOT_FOUND = "COMMENTS_NOT_FOUND",
+  PAGE_BEYOND_LIMIT = "PAGE_BEYOND_LIMIT",
+  USER_NOT_FOUND = "USER_NOT_FOUND",
+  UNKNOWN = "UNKNOWN",
+}
+
+export type GetCommentsOnUserResult = {
+  comments: Comment[];
+};
+
+export enum GetCommentsOnUserError {
+  COMMENTS_NOT_FOUND = "COMMENTS_NOT_FOUND",
+  PAGE_BEYOND_LIMIT = "PAGE_BEYOND_LIMIT",
+  USER_NOT_FOUND = "USER_NOT_FOUND",
+  POST_NOT_FOUND = "POST_NOT_FOUND",
+  UNKNOWN = "UNKNOWN",
+}

@@ -7,6 +7,12 @@ import {
   DeleteCommentError,
   UpdateCommentError,
   type UpdateCommentResult,
+  GetCommentsOnPostsError,
+  type GetCommentsOnPostsResult,
+  type GetCommentsOnMeResult,
+  GetCommentsOnMeError,
+  GetCommentsOnUserError,
+  type GetCommentsOnUserResult,
 } from "./comments-types";
 
 export const GetComments = async (parameters: {
@@ -87,8 +93,15 @@ export const CreateComment = async (parameters: {
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
+      include: {
+        user: {
+          select: {
+            username: true,
+            name: true,
+          },
+        },
+      },
     });
-
     if (!post) {
       throw CreateCommentError.POST_NOT_FOUND;
     }
@@ -212,5 +225,163 @@ export const DeleteComment = async (parameters: {
       throw e;
     }
     throw DeleteCommentError.UNKNOWN;
+  }
+};
+
+export const GetCommentsOnPosts = async (parameters: {
+  page: number;
+  limit: number;
+}): Promise<GetCommentsOnPostsResult> => {
+  try {
+    const { page, limit } = parameters;
+
+    if (page < 1 || limit < 1) {
+      throw new Error("Page or limit is below 1");
+    }
+
+    const skip = (page - 1) * limit;
+
+    const totalComments = await prisma.comment.count({
+      where: { postId: { not: null } as any },
+    });
+
+    if (totalComments === 0) {
+      throw new Error("No comments found");
+    }
+
+    const totalPages = Math.ceil(totalComments / limit);
+
+    if (page > totalPages) {
+      throw new Error("Page exceeds total pages");
+    }
+
+    const comments = await prisma.comment.findMany({
+      where: { postId: { not: null } as any },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+      include: {
+        user: {
+          select: {
+            username: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return { comments };
+  } catch (e) {
+    console.error(e);
+    throw new Error(e instanceof Error ? e.message : "Unknown error");
+  }
+};
+
+
+export const GetCommentsOnMe = async (parameters: {
+  userId: string;
+}): Promise<GetCommentsOnMeResult> => {
+  try {
+    const { userId } = parameters;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) {
+      throw GetCommentsOnMeError.USER_NOT_FOUND;
+    }
+    const comments = await prisma.comment.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return { comments };
+  } catch (e) {
+    console.error(e);
+    if (e === GetCommentsOnMeError.COMMENTS_NOT_FOUND) {
+      throw e;
+    }
+    if (e === GetCommentsOnMeError.PAGE_BEYOND_LIMIT) {
+      throw e;
+    }
+    if (e === GetCommentsOnMeError.USER_NOT_FOUND) {
+      throw e;
+    } 
+    throw GetCommentsOnMeError.UNKNOWN;
+  }
+};
+
+export const GetCommentsOnUser = async (parameters: {
+  username: string;
+  page: number;
+  limit: number;
+}): Promise<GetCommentsOnUserResult> => {
+
+  try {
+    const { username, page, limit } = parameters;
+
+    const user = await prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!user) {
+      throw GetCommentsOnUserError.USER_NOT_FOUND;
+    }
+
+    if (page < 1 || limit < 1) {
+      throw new Error("Page or limit is below 1");
+    }
+
+    const skip = (page - 1) * limit;  
+
+    const totalComments = await prisma.comment.count({
+      where: { userId: user.id },
+    });
+
+    if (totalComments === 0) {
+      throw new Error("No comments found");
+    }
+
+    const totalPages = Math.ceil(totalComments / limit);
+
+    if (page > totalPages) {
+      throw new Error("Page exceeds total pages");
+    }
+
+
+    const comments = await prisma.comment.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+      include: {
+        post: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },      
+    });
+
+    return { comments };
+  } catch (e) {
+    console.error(e);
+    if (e === GetCommentsOnUserError.COMMENTS_NOT_FOUND) {
+      throw e;
+    }
+    if (e === GetCommentsOnUserError.PAGE_BEYOND_LIMIT) {
+      throw e;
+    }
+    if (e === GetCommentsOnUserError.USER_NOT_FOUND) {  
+      throw e;
+    }
+    if (e === GetCommentsOnUserError.POST_NOT_FOUND) {
+      throw e;
+    }
+    throw GetCommentsOnUserError.UNKNOWN;
   }
 };
