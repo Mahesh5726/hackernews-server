@@ -6,14 +6,23 @@ import {
   DeletePostError,
   type GetPostsResult,
   type CreatePostResult,
+  GetPostByIdError,
+  type GetPostByIdResult,
+  type GetCommentsByPostIdResult,
+  GetCommentsByPostIdError,
+  CreateCommentByPostIdError,
+  type CreateCommentByPostIdResult,
+  GetUserPostsBySlugError,
 } from "./posts-types";
+import { number } from "zod";
 
 export const GetPosts = async (parameter: {
   page: number;
   limit: number;
+  userId?: string; // 👈 added userId
 }): Promise<GetPostsResult | Context> => {
   try {
-    const { page, limit } = parameter;
+    const { page, limit, userId } = parameter;
     const skip = (page - 1) * limit;
 
     // checking if the posts exist
@@ -35,14 +44,64 @@ export const GetPosts = async (parameter: {
       include: {
         user: {
           select: {
+            id: true,
             username: true,
             name: true,
+          },
+        },
+        Like: {
+          select: {
+            userId: true,
+          },
+        },
+        Comment: {
+          include: {
+            user: {
+              select: {
+                username: true,
+                name: true,
+              },
+            },
           },
         },
       },
     });
 
-    return { posts };
+    const formattedPosts = posts.map((post, index) => ({
+      number: index + 1,
+      id: post.id,
+      title: post.title,
+      content: post.content,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      userId: post.user.id,
+      user: {
+        username: post.user.username,
+        name: post.user.name,
+      },
+      likeCount: post.Like.length,
+      likedByUser: userId
+        ? post.Like.some((like) => like.userId === userId)
+        : false,
+      comments: post.Comment.map((comment) => ({
+        id: comment.id,
+        content: comment.content,
+        createdAt: comment.createdAt,
+        user: {
+          username: comment.user.username,
+          name: comment.user.name,
+        },
+      })),
+    }));
+
+    // Include userId and updatedAt to match the expected return type
+    const typedPosts = formattedPosts.map((post) => ({
+      ...post,
+      userId: post.user.username, // Assuming username is used as userId
+      updatedAt: post.createdAt, // Assuming updatedAt is same as createdAt if not available
+    }));
+
+    return { posts: typedPosts };
   } catch (e) {
     console.error(e);
     if (e === GetPostsError.POSTS_NOT_FOUND) {
@@ -169,13 +228,206 @@ export const DeletePost = async (parameters: {
 
     return "Post deleted successfully";
   } catch (e) {
-      console.error(e);
-      if (e === DeletePostError.POST_NOT_FOUND) {
-          throw DeletePostError.POST_NOT_FOUND;
-      }
-      if (e === DeletePostError.USER_NOT_FOUND) {
-          throw DeletePostError.USER_NOT_FOUND;
-      }
-      throw DeletePostError.UNKNOWN;
+    console.error(e);
+    if (e === DeletePostError.POST_NOT_FOUND) {
+      throw DeletePostError.POST_NOT_FOUND;
+    }
+    if (e === DeletePostError.USER_NOT_FOUND) {
+      throw DeletePostError.USER_NOT_FOUND;
+    }
+    throw DeletePostError.UNKNOWN;
+  }
+};
+
+export const GetPostById = async (parameters: {
+  postId: string;
+}): Promise<GetPostByIdResult> => {
+  try {
+    const { postId } = parameters;
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      include: {
+        user: {
+          select: {
+            username: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!post) {
+      throw GetPostByIdError.POST_NOT_FOUND;
+    }
+
+    return { post };
+  } catch (e) {
+    console.error(e);
+    if (e === GetPostByIdError.POST_NOT_FOUND) {
+      throw GetPostByIdError.POST_NOT_FOUND;
+    }
+    throw GetPostByIdError.UNKNOWN;
+  }
+};
+
+export const GetCommentsByPostId = async (parameters: {
+  postId: string;
+}): Promise<GetCommentsByPostIdResult> => {
+  try {
+    const { postId } = parameters;
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post) {
+      throw GetCommentsByPostIdError.POST_NOT_FOUND;
+    }
+
+    const comments = await prisma.comment.findMany({
+      where: { postId },
+      include: {
+        user: {
+          select: {
+            username: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return { comments };
+  } catch (e) {
+    console.error(e);
+    if (e === GetCommentsByPostIdError.POST_NOT_FOUND) {
+      throw GetCommentsByPostIdError.POST_NOT_FOUND;
+    }
+    throw GetCommentsByPostIdError.UNKNOWN;
+  }
+};
+
+export const CreateCommentByPostId = async (parameters: {
+  postId: string;
+  userId: string;
+  content: string;
+}): Promise<CreateCommentByPostIdResult> => {
+  try {
+    const { postId, userId, content } = parameters;
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      include: {
+        user: {
+          select: {
+            username: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!post) {
+      throw CreateCommentByPostIdError.POST_NOT_FOUND;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw CreateCommentByPostIdError.USER_NOT_FOUND;
+    }
+
+    const comment = await prisma.comment.create({
+      data: {
+        postId,
+        userId,
+        content,
+      },
+      include: {
+        user: {
+          select: {
+            username: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return { comment };
+  } catch (e) {
+    console.error(e);
+    if (e === CreateCommentByPostIdError.POST_NOT_FOUND) {
+      throw CreateCommentByPostIdError.POST_NOT_FOUND;
+    }
+    if (e === CreateCommentByPostIdError.USER_NOT_FOUND) {
+      throw CreateCommentByPostIdError.USER_NOT_FOUND;
+    }
+    throw CreateCommentByPostIdError.UNKNOWN;
+  }
+};
+
+export const GetUserPostsBySlug = async (parameters: {
+  slug: string;
+  page: number;
+  limit: number;
+}): Promise<GetPostsResult> => {
+  try {
+    const { slug, page, limit } = parameters;
+
+    const user = await prisma.user.findUnique({
+      where: { username: slug },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!user) {
+      throw GetUserPostsBySlugError.USER_NOT_FOUND;
+    }
+
+    const totalPosts = await prisma.post.count({
+      where: { userId: user.id },
+    });
+
+    if (totalPosts === 0) {
+      throw GetUserPostsBySlugError.POSTS_NOT_FOUND;
+    }
+
+    const totalPages = Math.ceil(totalPosts / limit);
+
+    if (page > totalPages) {
+      throw GetUserPostsBySlugError.PAGE_BEYOND_LIMIT;
+    }
+
+    const posts = await prisma.post.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      skip: (page - 1) * limit,
+      include: {
+        user: {
+          select: {
+            username: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return { posts };
+  } catch (e) {
+    console.error(e);
+    if (e === GetUserPostsBySlugError.USER_NOT_FOUND) {
+      throw GetUserPostsBySlugError.USER_NOT_FOUND;
+    }
+    if (e === GetUserPostsBySlugError.POSTS_NOT_FOUND) {
+      throw GetUserPostsBySlugError.POSTS_NOT_FOUND;
+    }
+    if (e === GetUserPostsBySlugError.PAGE_BEYOND_LIMIT) {
+      throw GetUserPostsBySlugError.PAGE_BEYOND_LIMIT;
+    }
+    throw GetUserPostsBySlugError.UNKNOWN;
   }
 };
