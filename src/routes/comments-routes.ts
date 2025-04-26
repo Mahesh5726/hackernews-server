@@ -1,22 +1,27 @@
 import { Hono } from "hono";
-import { tokenMiddleware } from "./middleware/token-middleware";
+import { sessionMiddleware } from "./middleware/session-middleware";
 import {
   GetComments,
   CreateComment,
   DeleteComment,
   UpdateComment,
+  GetCommentsOnPosts,
+  GetCommentsOnMe,
+  GetCommentsOnUser,
 } from "../controllers/comments/comments-controllers";
 import {
   GetCommentsError,
   CreateCommentError,
   UpdateCommentError,
   DeleteCommentError,
+  GetCommentsOnPostsError,
+  GetCommentsOnMeError,
+  GetCommentsOnUserError,
 } from "../controllers/comments/comments-types";
 import { getPagination } from "../extras/pagination";
-
 export const commentsRoutes = new Hono();
 
-commentsRoutes.get("/on/:postId", tokenMiddleware, async (c) => {
+commentsRoutes.get("/on/:postId", async (c) => {
   try {
     const postId = c.req.param("postId");
     const { page, limit } = getPagination(c);
@@ -36,10 +41,10 @@ commentsRoutes.get("/on/:postId", tokenMiddleware, async (c) => {
   }
 });
 
-commentsRoutes.post("/on/:postId", tokenMiddleware, async (c) => {
+commentsRoutes.post("/on/:postId", sessionMiddleware, async (c) => {
   try {
     const postId = c.req.param("postId");
-    const userId = c.get("userId");
+    const userId = c.get("user").id;
     const { content } = await c.req.json();
     const result = await CreateComment({ postId, userId, content });
     return c.json(result, 201);
@@ -54,10 +59,10 @@ commentsRoutes.post("/on/:postId", tokenMiddleware, async (c) => {
   }
 });
 
-commentsRoutes.patch("/:commentId", tokenMiddleware, async (c) => {
+commentsRoutes.patch("/:commentId", sessionMiddleware, async (c) => {
   try {
     const commentId = c.req.param("commentId");
-    const userId = c.get("userId");
+    const userId = c.get("user").id;
     const { content } = await c.req.json();
     const result = await UpdateComment({ commentId, userId, content });
     return c.json(result, 200);
@@ -81,10 +86,10 @@ commentsRoutes.patch("/:commentId", tokenMiddleware, async (c) => {
   }
 });
 
-commentsRoutes.delete("/:commentId", tokenMiddleware, async (c) => {
+commentsRoutes.delete("/:commentId", sessionMiddleware, async (c) => {
   try {
     const commentId = c.req.param("commentId");
-    const userId = c.get("userId");
+    const userId = c.get("user").id;
     await DeleteComment({ commentId, userId });
     return c.json({ message: "Comment deleted successfully" }, 200);
   } catch (error) {
@@ -95,5 +100,67 @@ commentsRoutes.delete("/:commentId", tokenMiddleware, async (c) => {
       return c.json({ error: "You can only delete your own comments" }, 403);
     }
     return c.json({ error: "Unknown error" }, 500);
+  }
+});
+
+commentsRoutes.get("/on/posts", async (c) => {
+  try {
+    const { page, limit } = getPagination(c);
+    const result = await GetCommentsOnPosts({ page, limit });
+    return c.json(result, 200);
+  } catch (error) {
+    if (error === GetCommentsOnPostsError.PAGE_BEYOND_LIMIT) {
+      return c.json({ error: "No comments found on the requested page" }, 404);
+    }
+    if (error === GetCommentsOnPostsError.COMMENTS_NOT_FOUND) {
+      return c.json({ error: "No comments found" }, 404);
+    }
+    if (error === GetCommentsOnPostsError.POST_NOT_FOUND) {
+      return c.json({ error: "Post not found" }, 404);
+    }
+    return c.json({ error: "Unknown error" }, 500);
+  } 
+});
+
+commentsRoutes.get("/me", sessionMiddleware, async (c) => {
+  try {
+    const userId = c.get("user")?.id;
+    const result = await GetCommentsOnMe({ userId });
+    return c.json(result, 200);
+  } catch (error) {
+    if (error === GetCommentsOnMeError.COMMENTS_NOT_FOUND) {
+      return c.json({ error: "No comments found" }, 404);
+    }
+    if (error === GetCommentsOnMeError.PAGE_BEYOND_LIMIT) {
+      return c.json({ error: "No comments found on the requested page" }, 404);
+    }
+    if (error === GetCommentsOnMeError.USER_NOT_FOUND) {
+      return c.json({ error: "User not found" }, 404);
+    }
+    return c.json({ error: "Unknown error" }, 500);
+  }
+});
+
+
+commentsRoutes.get("/by/:slug", async (c) => {
+  try {
+    const { slug } = c.req.param();
+    const { page, limit } = getPagination(c);
+    const result = await GetCommentsOnUser({ username: slug, page, limit });
+    return c.json(result, 200);
+  } catch (error) {
+    if (error === GetCommentsOnMeError.COMMENTS_NOT_FOUND) {
+      return c.json({ error: "No comments found for this user" }, 404);
+    }
+    if (error === GetCommentsOnMeError.PAGE_BEYOND_LIMIT) {
+      return c.json({ error: "No comments found on the requested page" }, 404);
+    }
+    if (error === GetCommentsOnMeError.USER_NOT_FOUND) {
+      return c.json({ error: "User not found" }, 404);
+    }
+    if (error === GetCommentsOnUserError.POST_NOT_FOUND) {
+      return c.json({ error: "Post not found" }, 404);
+    }
+    return c.json({ error: "Unknown error!" }, 500);
   }
 });

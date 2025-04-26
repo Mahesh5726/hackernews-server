@@ -286,6 +286,9 @@ export const GetCommentsOnMe = async (parameters: {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      select: {
+        id: true,
+      },
     });
     if (!user) {
       throw GetCommentsOnMeError.USER_NOT_FOUND;
