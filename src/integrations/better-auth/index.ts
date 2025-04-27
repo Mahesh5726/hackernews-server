@@ -34,6 +34,10 @@ const betterAuthServerClient = betterAuth({
   username: {
     enabled: true,
   },
+  cookies: {
+    enabled: true,
+    secure: true,
+  },
 });
 
 export default betterAuthServerClient;
