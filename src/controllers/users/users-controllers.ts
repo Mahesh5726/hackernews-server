@@ -1,5 +1,4 @@
-import { prisma } from "../../extras/prisma";
-import { prismaClient } from "../../integrations/prisma";
+import { prismaClient as prisma } from "../../integrations/prisma";
 import {
   GetMeError,
   type GetMeResult,
@@ -26,7 +25,7 @@ export const GetMe = async (parameters: {
       throw GetMeError.PAGE_BEYOND_LIMIT;
     }
 
-    const user = await prismaClient.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
