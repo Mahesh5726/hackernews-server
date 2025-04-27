@@ -1,13 +1,11 @@
-import { createHash } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import {
   LogInWithUsernameAndPasswordError,
   SignUpWithUsernameAndPasswordError,
   type LogInWithUsernameAndPasswordResult,
   type SignUpWithUsernameAndPasswordResult,
 } from "./authentication-types";
-import { prisma } from "../../extras/prisma";
-import * as jwt from "jsonwebtoken";
-import { jwtSecretKey } from "../../../environment";
+import { prismaClient as prisma } from "../../integrations/prisma";
 
 export const createPasswordHash = (parameters: {
   password: string;
@@ -15,27 +13,15 @@ export const createPasswordHash = (parameters: {
   return createHash("sha256").update(parameters.password).digest("hex");
 };
 
-const createJWToken = (parameters: {
-  id: string;
-  username: string;
-}): string => {
-  const jwtPayload: jwt.JwtPayload = {
-    iss: "https://purpleshorts.co.in",
-    sub: parameters.id,
-    username: parameters.username,
-  };
-
-  const token = jwt.sign(jwtPayload, jwtSecretKey, {
-    expiresIn: "30d",
-  });
-
-  return token;
+const generateSessionToken = (): string => {
+  return createHash("sha256").update(Math.random().toString()).digest("hex");
 };
 
 export const signUpWithUsernameAndPassword = async (parameters: {
   username: string;
   password: string;
   name: string;
+  email: string;
 }): Promise<SignUpWithUsernameAndPasswordResult> => {
   try {
     const existingUser = await prisma.user.findUnique({
@@ -51,28 +37,71 @@ export const signUpWithUsernameAndPassword = async (parameters: {
     const hashedPassword = createPasswordHash({
       password: parameters.password,
     });
-    const user = await prisma.user.create({
-      data: {
-        username: parameters.username,
-        password: hashedPassword,
-        name: parameters.name,
-      },
+
+    const sessionToken = generateSessionToken();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+    // Create user with account and session in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Create the user first
+      const newUser = await tx.user.create({
+        data: {
+          username: parameters.username,
+          name: parameters.name,
+          email: parameters.email,
+          emailVerified: false,
+          displayUsername: parameters.username,
+          about: null,
+          image: null,
+        },
+      });
+
+      // Create the account
+      await tx.account.create({
+        data: {
+          id: randomUUID(),
+          accountId: randomUUID(),
+          providerId: "credentials",
+          password: hashedPassword,
+          createdAt: now,
+          updatedAt: now,
+          userId: newUser.id,
+        },
+      });
+
+      // Create the session
+      await tx.session.create({
+        data: {
+          id: randomUUID(),
+          token: sessionToken,
+          expiresAt,
+          createdAt: now,
+          updatedAt: now,
+          userId: newUser.id,
+        },
+      });
+
+      // Get the complete user with all relations
+      const user = await tx.user.findUnique({
+        where: {
+          id: newUser.id,
+        },
+        include: {
+          accounts: true,
+          sessions: true,
+        },
+      });
+
+      if (!user) {
+        throw new Error("Failed to create user");
+      }
+
+      return {
+        token: sessionToken,
+        user,
+      };
     });
-
-    const jwtPayload: jwt.JwtPayload = {
-      iss: "http://purpleshorts.co.in",
-      sub: user.id,
-      username: user.username,
-    };
-
-    const token = jwt.sign(jwtPayload, jwtSecretKey, {
-      expiresIn: "30d",
-    });
-
-    const result: SignUpWithUsernameAndPasswordResult = {
-      token,
-      user,
-    };
 
     return result;
   } catch (e) {
@@ -89,10 +118,19 @@ export const logInWithUsernameAndPassword = async (parameters: {
     password: parameters.password,
   });
 
-  const user = await prisma.user.findUnique({
+  // Find user with account in a single query
+  const user = await prisma.user.findFirst({
     where: {
       username: parameters.username,
-      password: passwordHash,
+      accounts: {
+        some: {
+          providerId: "credentials",
+          password: passwordHash,
+        },
+      },
+    },
+    include: {
+      accounts: true,
     },
   });
 
@@ -100,15 +138,24 @@ export const logInWithUsernameAndPassword = async (parameters: {
     throw LogInWithUsernameAndPasswordError.INCORRECT_USERNAME_OR_PASSWORD;
   }
 
-  const token = createJWToken({
-    id: user.id,
-    username: user.username,
+  const sessionToken = generateSessionToken();
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+  // Create a new session
+  await prisma.session.create({
+    data: {
+      id: randomUUID(),
+      token: sessionToken,
+      expiresAt,
+      createdAt: now,
+      updatedAt: now,
+      userId: user.id,
+    },
   });
 
-  const result: LogInWithUsernameAndPasswordResult = {
-    token,
+  return {
+    token: sessionToken,
     user,
   };
-
-  return result;
 };
