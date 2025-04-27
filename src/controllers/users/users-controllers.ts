@@ -80,9 +80,9 @@ export const GetMe = async (parameters: {
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
         posts: user.posts || [],
-        comments: user.comments ? user.comments.map(comment => ({
+        comments: user.comments ? user.comments.filter(comment => comment.postId !== null).map(comment => ({
           ...comment,
-          postId: comment.postId || '',
+          postId: comment.postId as string
         })) : [],
         likes: user.likes || [],
       },
