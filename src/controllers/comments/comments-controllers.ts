@@ -296,6 +296,14 @@ export const GetCommentsOnMe = async (parameters: {
     const comments = await prisma.comment.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
+      include: {
+        post: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },  
     });
 
     return { comments };
