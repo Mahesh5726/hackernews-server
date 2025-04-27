@@ -148,6 +148,9 @@ export const DeleteLike = async (parameters: {
     const { postId, userId } = parameters;
     const post = await prisma.post.findUnique({
       where: { id: postId },
+      include: {
+        Like: true,
+      },
     });
     if (!post) {
       throw DeleteLikeError.POST_NOT_FOUND;

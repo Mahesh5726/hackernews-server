@@ -14,7 +14,6 @@ import {
   type CreateCommentByPostIdResult,
   GetUserPostsBySlugError,
 } from "./posts-types";
-import { number } from "zod";
 
 export const GetPosts = async (parameter: {
   page: number;
@@ -94,14 +93,7 @@ export const GetPosts = async (parameter: {
       })),
     }));
 
-    // Include userId and updatedAt to match the expected return type
-    const typedPosts = formattedPosts.map((post) => ({
-      ...post,
-      userId: post.user.username, // Assuming username is used as userId
-      updatedAt: post.createdAt, // Assuming updatedAt is same as createdAt if not available
-    }));
-
-    return { posts: typedPosts };
+    return { posts: formattedPosts };
   } catch (e) {
     console.error(e);
     if (e === GetPostsError.POSTS_NOT_FOUND) {

@@ -1,4 +1,5 @@
 import { prisma } from "../../extras/prisma";
+import { prismaClient } from "../../integrations/prisma";
 import {
   GetMeError,
   type GetMeResult,
@@ -8,10 +9,62 @@ import {
 
 export const GetMe = async (parameters: {
   userId: string;
+  page: number;
+  limit: number;
 }): Promise<GetMeResult> => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: parameters.userId },
+    const { userId, page, limit } = parameters;
+    const skip = (page - 1) * limit;
+
+    const totalUsers = await prisma.user.count();
+    if (totalUsers === 0) {
+      throw GetMeError.USER_NOT_FOUND;
+    }
+
+    const totalPages = Math.ceil(totalUsers / limit);
+    if (page > totalPages) {
+      throw GetMeError.PAGE_BEYOND_LIMIT;
+    }
+
+    const user = await prismaClient.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        about: true,
+        createdAt: true,
+        updatedAt: true,
+        posts: {
+          select: {
+            id: true,
+            title: true,
+            content: true,
+            createdAt: true,
+            updatedAt: true,
+            userId: true,
+          },
+        },
+        comments: {
+          select: {
+            id: true,
+            content: true,
+            postId: true,
+            createdAt: true,
+            updatedAt: true,
+            userId: true,
+          },
+        },
+        likes: {
+          select: {
+            id: true,
+            postId: true,
+            createdAt: true,
+            updatedAt: true,
+            userId: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -19,7 +72,20 @@ export const GetMe = async (parameters: {
     }
 
     const result: GetMeResult = {
-      user: user,
+      user: {
+        id: user.id,
+        username: user.username,
+        name: user.name || "",
+        about: user.about || "",
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        posts: user.posts || [],
+        comments: user.comments ? user.comments.map(comment => ({
+          ...comment,
+          postId: comment.postId || '',
+        })) : [],
+        likes: user.likes || [],
+      },
     };
 
     return result;
