@@ -1,4 +1,4 @@
-import { prisma } from "../../extras/prisma";
+import { prismaClient as prisma } from "../../integrations/prisma";
 import {
   GetCommentsError,
   CreateCommentError,
@@ -7,7 +7,6 @@ import {
   DeleteCommentError,
   UpdateCommentError,
   type UpdateCommentResult,
-  GetCommentsOnPostsError,
   type GetCommentsOnPostsResult,
   type GetCommentsOnMeResult,
   GetCommentsOnMeError,
@@ -94,7 +93,7 @@ export const CreateComment = async (parameters: {
     const post = await prisma.post.findUnique({
       where: { id: postId },
       include: {
-        user: {
+        author: {
           select: {
             username: true,
             name: true,
@@ -277,7 +276,6 @@ export const GetCommentsOnPosts = async (parameters: {
   }
 };
 
-
 export const GetCommentsOnMe = async (parameters: {
   userId: string;
 }): Promise<GetCommentsOnMeResult> => {
@@ -303,7 +301,7 @@ export const GetCommentsOnMe = async (parameters: {
             title: true,
           },
         },
-      },  
+      },
     });
 
     return { comments };
@@ -317,7 +315,7 @@ export const GetCommentsOnMe = async (parameters: {
     }
     if (e === GetCommentsOnMeError.USER_NOT_FOUND) {
       throw e;
-    } 
+    }
     throw GetCommentsOnMeError.UNKNOWN;
   }
 };
@@ -327,7 +325,6 @@ export const GetCommentsOnUser = async (parameters: {
   page: number;
   limit: number;
 }): Promise<GetCommentsOnUserResult> => {
-
   try {
     const { username, page, limit } = parameters;
 
@@ -346,7 +343,7 @@ export const GetCommentsOnUser = async (parameters: {
       throw new Error("Page or limit is below 1");
     }
 
-    const skip = (page - 1) * limit;  
+    const skip = (page - 1) * limit;
 
     const totalComments = await prisma.comment.count({
       where: { userId: user.id },
@@ -362,7 +359,6 @@ export const GetCommentsOnUser = async (parameters: {
       throw new Error("Page exceeds total pages");
     }
 
-
     const comments = await prisma.comment.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
@@ -375,7 +371,7 @@ export const GetCommentsOnUser = async (parameters: {
             title: true,
           },
         },
-      },      
+      },
     });
 
     return { comments };
@@ -387,7 +383,7 @@ export const GetCommentsOnUser = async (parameters: {
     if (e === GetCommentsOnUserError.PAGE_BEYOND_LIMIT) {
       throw e;
     }
-    if (e === GetCommentsOnUserError.USER_NOT_FOUND) {  
+    if (e === GetCommentsOnUserError.USER_NOT_FOUND) {
       throw e;
     }
     if (e === GetCommentsOnUserError.POST_NOT_FOUND) {
