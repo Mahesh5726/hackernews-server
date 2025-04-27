@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { prisma } from "../../extras/prisma";
+import { prismaClient as prisma } from "../../integrations/prisma";
 import {
   GetPostsError,
   CreatePostError,
@@ -41,19 +41,19 @@ export const GetPosts = async (parameter: {
       skip,
       take: limit,
       include: {
-        user: {
+        author: {
           select: {
             id: true,
             username: true,
             name: true,
           },
         },
-        Like: {
+        likes: {
           select: {
             userId: true,
           },
         },
-        Comment: {
+        comments: {
           include: {
             user: {
               select: {
@@ -73,16 +73,16 @@ export const GetPosts = async (parameter: {
       content: post.content,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
-      userId: post.user.id,
+      userId: post.author.id,
       user: {
-        username: post.user.username,
-        name: post.user.name,
+        username: post.author.username,
+        name: post.author.name,
       },
-      likeCount: post.Like.length,
+      likeCount: post.likes.length,
       likedByUser: userId
-        ? post.Like.some((like) => like.userId === userId)
+        ? post.likes.some((like) => like.userId === userId)
         : false,
-      comments: post.Comment.map((comment) => ({
+      comments: post.comments.map((comment) => ({
         id: comment.id,
         content: comment.content,
         createdAt: comment.createdAt,
@@ -134,7 +134,7 @@ export const GetUserPosts = async (parameters: {
       orderBy: { createdAt: "desc" },
       take: limit,
       include: {
-        user: {
+        author: {
           select: {
             username: true,
             name: true,
@@ -176,10 +176,10 @@ export const CreatePost = async (parameters: {
       data: {
         userId,
         title,
-        content,
+        content: content || "",
       },
       include: {
-        user: {
+        author: {
           select: {
             username: true,
             name: true,
@@ -240,7 +240,7 @@ export const GetPostById = async (parameters: {
     const post = await prisma.post.findUnique({
       where: { id: postId },
       include: {
-        user: {
+        author: {
           select: {
             username: true,
             name: true,
@@ -310,7 +310,7 @@ export const CreateCommentByPostId = async (parameters: {
     const post = await prisma.post.findUnique({
       where: { id: postId },
       include: {
-        user: {
+        author: {
           select: {
             username: true,
             name: true,
@@ -399,7 +399,7 @@ export const GetUserPostsBySlug = async (parameters: {
       take: limit,
       skip: (page - 1) * limit,
       include: {
-        user: {
+        author: {
           select: {
             username: true,
             name: true,
