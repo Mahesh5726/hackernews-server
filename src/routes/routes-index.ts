@@ -1,6 +1,4 @@
 import { Hono } from "hono";
-import { swaggerUI } from "@hono/swagger-ui";
-import { swaggerDocument } from "./swagger-doc";
 import { authenticationRoutes } from "./authentication-routes";
 import { usersRoutes } from "./users-routes";
 import { postsRoutes } from "./posts-routes";
@@ -13,15 +11,13 @@ export const allRoutes = new Hono();
 
 allRoutes.use(
   cors({
-    origin: ["https://hackernews-ui-lemonisland.vercel.app"],
+    origin: ["http://localhost:4000"],
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
     allowHeaders: ["Content-Type", "Authorization", "token"],
   })
 );
 
-allRoutes.get("/ui", swaggerUI({ url: "/docs" }));
-allRoutes.route("/", swaggerDocument);
 allRoutes.route("/api/auth", authRoute);
 allRoutes.route("/auth", authenticationRoutes);
 allRoutes.route("/users", usersRoutes);
