@@ -23,7 +23,7 @@ authenticationRoutes.post("/sign-up", async (c) => {
     // Set the session cookie
     c.header(
       "Set-Cookie",
-      `session_token=${result.token}; Path=/; HttpOnly; SameSite=None; Secure=true`
+      `__Secure-better-auth.session_token=${result.token}; Path=/; Max-Age=604800; HttpOnly; SameSite=None; Secure`
     );
 
     return c.json({ data: result }, 200);
