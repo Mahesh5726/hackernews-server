@@ -20,6 +20,12 @@ authenticationRoutes.post("/sign-up", async (c) => {
       email,
     });
 
+    // Set the session cookie
+    c.header(
+      "Set-Cookie",
+      `session_token=${result.token}; Path=/; HttpOnly; SameSite=None; Secure=true`
+    );
+
     return c.json({ data: result }, 200);
   } catch (error) {
     if (error === SignUpWithUsernameAndPasswordError.CONFLICTING_USERNAME) {
@@ -37,6 +43,12 @@ authenticationRoutes.post("/log-in", async (c) => {
       username,
       password,
     });
+
+    // Set the session cookie
+    c.header(
+      "Set-Cookie",
+      `session_token=${result.token}; Path=/; HttpOnly; SameSite=None; Secure=true`
+    );
 
     return c.json(
       {

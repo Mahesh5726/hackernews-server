@@ -15,6 +15,8 @@ allRoutes.use(
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
     allowHeaders: ["Content-Type", "Authorization", "token"],
+    exposeHeaders: ["Set-Cookie"],
+    maxAge: 600,
   })
 );
 

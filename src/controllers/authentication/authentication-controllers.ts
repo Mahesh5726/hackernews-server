@@ -6,6 +6,7 @@ import {
   type SignUpWithUsernameAndPasswordResult,
 } from "./authentication-types";
 import { prismaClient as prisma } from "../../integrations/prisma";
+import type { CookieOptions } from "better-auth";
 
 export const createPasswordHash = (parameters: {
   password: string;
@@ -15,6 +16,15 @@ export const createPasswordHash = (parameters: {
 
 const generateSessionToken = (): string => {
   return createHash("sha256").update(Math.random().toString()).digest("hex");
+};
+
+const getCookieOptions = (): CookieOptions => {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    path: "/",
+  };
 };
 
 export const signUpWithUsernameAndPassword = async (parameters: {
@@ -82,24 +92,19 @@ export const signUpWithUsernameAndPassword = async (parameters: {
         },
       });
 
-      // Get the complete user with all relations
-      const user = await tx.user.findUnique({
-        where: {
-          id: newUser.id,
-        },
-        include: {
-          accounts: true,
-          sessions: true,
-        },
-      });
+      const cookie = getCookieOptions();
 
-      if (!user) {
-        throw new Error("Failed to create user");
-      }
+      const response = {
+        token: sessionToken,
+        user: newUser,
+      };
 
       return {
-        token: sessionToken,
-        user,
+        ...response,
+        cookie: {
+          ...cookie,
+          value: sessionToken,
+        },
       };
     });
 
