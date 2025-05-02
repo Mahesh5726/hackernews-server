@@ -63,10 +63,10 @@ export const GetComments = async (parameters: {
     return { comments };
   } catch (e) {
     console.error(e);
-    if (
-      e === GetCommentsError.POST_NOT_FOUND ||
-      e === GetCommentsError.PAGE_BEYOND_LIMIT
-    ) {
+    if (e === GetCommentsError.POST_NOT_FOUND) {
+      throw e;
+    }
+    if (e === GetCommentsError.PAGE_BEYOND_LIMIT) {
       throw e;
     }
     throw GetCommentsError.UNKNOWN;
