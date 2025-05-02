@@ -9,16 +9,16 @@ authRoute.on(["GET", "POST"], "/*", (context) => {
   return auth.handler(context.req.raw);
 });
 
-authRoute.get("/get-session", async (c) => {
+authRoute.get("/get-session", async (context) => {
   const session = await auth.api.getSession({
-    headers: c.req.raw.headers,
+    headers: context.req.raw.headers,
   });
 
   if (!session) {
-    return c.json({ user: null, session: null }, 401);
+    return context.json({ user: null, session: null }, 401);
   }
 
-  return c.json({
+  return context.json({
     user: session.user,
     session: session.session,
   });

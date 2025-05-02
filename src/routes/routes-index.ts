@@ -10,6 +10,7 @@ import { cors } from "hono/cors";
 export const allRoutes = new Hono();
 
 allRoutes.use(
+  "/api/auth/*",
   cors({
     // origin: "http://localhost:4000",
     origin: ["https://hackernews-ui-lemonisland.vercel.app"],
