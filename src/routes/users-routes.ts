@@ -3,7 +3,7 @@ import { GetUsers, GetMe } from "../controllers/users/users-controllers";
 import { GetUsersError, GetMeError } from "../controllers/users/users-types";
 import { getPagination } from "../extras/pagination";
 import { sessionMiddleware } from "./middleware/session-middleware";
-import { prismaClient } from "../integrations/prisma";
+import { prismaClient } from "../lib/prisma";
 export const usersRoutes = new Hono();
 
 usersRoutes.all("/me", sessionMiddleware, async (context) => {
@@ -71,7 +71,9 @@ usersRoutes.get("/", sessionMiddleware, async (context) => {
     }
     if (error === GetUsersError.PAGE_BEYOND_LIMIT) {
       return context.json(
-        { error: "No users found on the page requested" }, 404);
+        { error: "No users found on the page requested" },
+        404
+      );
     }
     if (error === GetUsersError.UNKNOWN) {
       return context.json({ error: "Unknown error" }, 500);

@@ -11,7 +11,7 @@ export const allRoutes = new Hono();
 
 allRoutes.use(
   cors({
-    origin: "https://hackernews-ui-lemonisland.vercel.app",
+    origin: "http://localhost:4000",
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
     allowHeaders: ["Content-Type", "Authorization", "token"],

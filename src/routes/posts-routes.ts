@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { sessionMiddleware } from "./middleware/session-middleware";
+import { authRoute, sessionMiddleware } from "./middleware/session-middleware";
 import {
   GetPosts,
   GetUserPosts,
@@ -17,6 +17,9 @@ import {
 import { getPagination } from "../extras/pagination";
 
 export const postsRoutes = new Hono();
+
+
+postsRoutes.route("/auth", authRoute);
 
 postsRoutes.get("/", async (context) => {
   try {
