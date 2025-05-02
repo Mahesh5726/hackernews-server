@@ -7,11 +7,8 @@ import {
   LogInWithUsernameAndPasswordError,
   SignUpWithUsernameAndPasswordError,
 } from "../controllers/authentication/authentication-types";
-import { authRoute } from "./middleware/session-middleware";
 
 export const authenticationRoutes = new Hono();
-
-authenticationRoutes.route("/auth", authRoute);
 
 authenticationRoutes.post("/sign-up", async (c) => {
   const { username, password, name, email } = await c.req.json();
