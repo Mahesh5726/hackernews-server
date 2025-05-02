@@ -40,10 +40,6 @@ export const GetComments = async (parameters: {
       where: { postId },
     });
 
-    if (totalComments === 0) {
-      throw GetCommentsError.COMMENTS_NOT_FOUND;
-    }
-
     const totalPages = Math.ceil(totalComments / limit);
     if (page > totalPages) {
       throw GetCommentsError.PAGE_BEYOND_LIMIT;
@@ -69,7 +65,6 @@ export const GetComments = async (parameters: {
     console.error(e);
     if (
       e === GetCommentsError.POST_NOT_FOUND ||
-      e === GetCommentsError.COMMENTS_NOT_FOUND ||
       e === GetCommentsError.PAGE_BEYOND_LIMIT
     ) {
       throw e;

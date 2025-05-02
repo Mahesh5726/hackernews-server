@@ -31,9 +31,6 @@ commentsRoutes.get("/on/:postId", async (c) => {
     if (error === GetCommentsError.POST_NOT_FOUND) {
       return c.json({ error: "Post not found" }, 404);
     }
-    if (error === GetCommentsError.COMMENTS_NOT_FOUND) {
-      return c.json({ error: "No comments found on this post" }, 404);
-    }
     if (error === GetCommentsError.PAGE_BEYOND_LIMIT) {
       return c.json({ error: "No comments found on the requested page" }, 404);
     }

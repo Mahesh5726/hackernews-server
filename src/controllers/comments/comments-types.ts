@@ -6,7 +6,6 @@ export type GetCommentsResult = {
 
 export enum GetCommentsError {
   POST_NOT_FOUND = "POST_NOT_FOUND",
-  COMMENTS_NOT_FOUND = "COMMENTS_NOT_FOUND",
   PAGE_BEYOND_LIMIT = "PAGE_BEYOND_LIMIT",
   UNKNOWN = "UNKNOWN",
 }
