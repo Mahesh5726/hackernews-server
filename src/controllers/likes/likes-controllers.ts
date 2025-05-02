@@ -1,4 +1,4 @@
-import { prismaClient as prisma } from "../../integrations/prisma";
+import { prismaClient as prisma } from "../../lib/prisma";
 import {
   DeleteLikeError,
   GetLikesError,
@@ -51,7 +51,7 @@ export const GetLikes = async (parameters: {
             username: true,
             name: true,
           },
-        }
+        },
       },
     });
 
@@ -228,13 +228,13 @@ export const GetLikesOnMe = async (parameters: {
     }
     throw GetLikesOnMeError.UNKNOWN;
   }
-};  
+};
 
 export const GetLikesOnUser = async (parameters: {
   username: string;
   page: number;
   limit: number;
-}): Promise<GetLikesOnUserResult> =>  {
+}): Promise<GetLikesOnUserResult> => {
   try {
     const { username, page, limit } = parameters;
 
@@ -252,11 +252,11 @@ export const GetLikesOnUser = async (parameters: {
     });
     if (!user) {
       throw GetLikesOnUserError.USER_NOT_FOUND;
-    }     
+    }
 
     const likes = await prisma.like.findMany({
       where: { userId: user.id },
-      orderBy: { createdAt: "desc" }, 
+      orderBy: { createdAt: "desc" },
       skip,
       take: limit,
       include: {
@@ -269,21 +269,20 @@ export const GetLikesOnUser = async (parameters: {
       },
     });
     return { likes };
-  } catch (e) { 
+  } catch (e) {
     console.error(e);
     if (e === GetLikesOnUserError.LIKES_NOT_FOUND) {
       throw e;
     }
     if (e === GetLikesOnUserError.USER_NOT_FOUND) {
       throw e;
-    } 
+    }
     if (e === GetLikesOnUserError.PAGE_NOT_FOUND) {
       throw e;
     }
     if (e === GetLikesOnUserError.POST_NOT_FOUND) {
       throw e;
-    } 
+    }
     throw GetLikesOnUserError.UNKNOWN;
   }
-};  
-
+};

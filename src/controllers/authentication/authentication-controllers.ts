@@ -1,166 +1,63 @@
-import { createHash, randomUUID } from "crypto";
-import {
-  LogInWithUsernameAndPasswordError,
-  SignUpWithUsernameAndPasswordError,
-  type LogInWithUsernameAndPasswordResult,
-  type SignUpWithUsernameAndPasswordResult,
-} from "./authentication-types";
-import { prismaClient as prisma } from "../../integrations/prisma";
-import type { CookieOptions } from "better-auth";
+"use server";
 
-export const createPasswordHash = (parameters: {
-  password: string;
-}): string => {
-  return createHash("sha256").update(parameters.password).digest("hex");
-};
+import auth from "../../lib/auth";
 
-const generateSessionToken = (): string => {
-  return createHash("sha256").update(Math.random().toString()).digest("hex");
-};
-
-const getCookieOptions = (): CookieOptions => {
-  return {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    path: "/",
-  };
-};
-
-export const signUpWithUsernameAndPassword = async (parameters: {
+/**
+ * Sign up a user using Better Auth's email-based signup.
+ * @param params - User credentials and details
+ */
+export const signUp = async (params: {
   username: string;
-  password: string;
-  name: string;
   email: string;
-}): Promise<SignUpWithUsernameAndPasswordResult> => {
-  try {
-    const existingUser = await prisma.user.findUnique({
-      where: {
-        username: parameters.username,
-      },
-    });
-
-    if (existingUser) {
-      throw SignUpWithUsernameAndPasswordError.CONFLICTING_USERNAME;
-    }
-
-    const hashedPassword = createPasswordHash({
-      password: parameters.password,
-    });
-
-    const sessionToken = generateSessionToken();
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
-
-    // Create user with account and session in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Create the user first
-      const newUser = await tx.user.create({
-        data: {
-          username: parameters.username,
-          name: parameters.name,
-          email: parameters.email,
-          emailVerified: false,
-          displayUsername: parameters.username,
-          about: null,
-          image: null,
-        },
-      });
-
-      // Create the account
-      await tx.account.create({
-        data: {
-          id: randomUUID(),
-          accountId: randomUUID(),
-          providerId: "credentials",
-          password: hashedPassword,
-          createdAt: now,
-          updatedAt: now,
-          userId: newUser.id,
-        },
-      });
-
-      // Create the session
-      await tx.session.create({
-        data: {
-          id: randomUUID(),
-          token: sessionToken,
-          expiresAt,
-          createdAt: now,
-          updatedAt: now,
-          userId: newUser.id,
-        },
-      });
-
-      const cookie = getCookieOptions();
-
-      const response = {
-        token: sessionToken,
-        user: newUser,
-      };
-
-      return {
-        ...response,
-        cookie: {
-          ...cookie,
-          value: sessionToken,
-        },
-      };
-    });
-
-    return result;
-  } catch (e) {
-    console.error(e);
-    throw SignUpWithUsernameAndPasswordError.UNKNOWN;
+  name: string;
+  password: string;
+}) => {
+  const result = await auth.api.signUpEmail({
+    body: {
+      username: params.username,
+      email: params.email,
+      name: params.name,
+      password: params.password,
+    },
+  });
+  // Check if result has an error property before accessing it
+  if ("error" in result && result.error) {
+    throw new Error(
+      typeof result.error === "object" &&
+      result.error !== null &&
+      "message" in result.error
+        ? String(result.error.message)
+        : "Signup failed."
+    );
   }
+
+  return result;
 };
 
-export const logInWithUsernameAndPassword = async (parameters: {
-  username: string;
+/**
+ * Sign in a user using Better Auth's email-based login.
+ * @param params - User email and password
+ */
+export const signIn = async (params: {
   password: string;
-}): Promise<LogInWithUsernameAndPasswordResult> => {
-  const passwordHash = createPasswordHash({
-    password: parameters.password,
-  });
-
-  // Find user with account in a single query
-  const user = await prisma.user.findFirst({
-    where: {
-      username: parameters.username,
-      accounts: {
-        some: {
-          providerId: "credentials",
-          password: passwordHash,
-        },
-      },
-    },
-    include: {
-      accounts: true,
+  username: string;
+}) => {
+  const result = await auth.api.signInUsername({
+    body: {
+      username: params.username,
+      password: params.password,
     },
   });
 
-  if (!user) {
-    throw LogInWithUsernameAndPasswordError.INCORRECT_USERNAME_OR_PASSWORD;
+  if (result && "error" in result && result.error) {
+    throw new Error(
+      typeof result.error === "object" &&
+      result.error !== null &&
+      "message" in result.error
+        ? String(result.error.message)
+        : "Login failed."
+    );
   }
 
-  const sessionToken = generateSessionToken();
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
-
-  // Create a new session
-  await prisma.session.create({
-    data: {
-      id: randomUUID(),
-      token: sessionToken,
-      expiresAt,
-      createdAt: now,
-      updatedAt: now,
-      userId: user.id,
-    },
-  });
-
-  return {
-    token: sessionToken,
-    user,
-  };
+  return result;
 };

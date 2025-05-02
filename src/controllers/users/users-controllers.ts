@@ -1,4 +1,4 @@
-import { prismaClient as prisma } from "../../integrations/prisma";
+import { prismaClient as prisma } from "../../lib/prisma";
 import {
   GetMeError,
   type GetMeResult,
@@ -79,10 +79,14 @@ export const GetMe = async (parameters: {
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
         posts: user.posts || [],
-        comments: user.comments ? user.comments.filter(comment => comment.postId !== null).map(comment => ({
-          ...comment,
-          postId: comment.postId as string
-        })) : [],
+        comments: user.comments
+          ? user.comments
+              .filter((comment) => comment.postId !== null)
+              .map((comment) => ({
+                ...comment,
+                postId: comment.postId as string,
+              }))
+          : [],
         likes: user.likes || [],
       },
     };

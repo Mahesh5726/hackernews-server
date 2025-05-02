@@ -1,4 +1,4 @@
-import { prismaClient as prisma } from "../../integrations/prisma";
+import { prismaClient as prisma } from "../../lib/prisma";
 import {
   GetCommentsError,
   CreateCommentError,

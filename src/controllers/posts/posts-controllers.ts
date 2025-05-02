@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { prismaClient as prisma } from "../../integrations/prisma";
+import { prismaClient as prisma } from "../../lib/prisma";
 import {
   GetPostsError,
   CreatePostError,
