@@ -2,10 +2,6 @@
 
 import auth from "../../lib/auth";
 
-/**
- * Sign up a user using Better Auth's email-based signup.
- * @param params - User credentials and details
- */
 export const signUp = async (params: {
   username: string;
   email: string;
@@ -20,7 +16,6 @@ export const signUp = async (params: {
       password: params.password,
     },
   });
-  // Check if result has an error property before accessing it
   if ("error" in result && result.error) {
     throw new Error(
       typeof result.error === "object" &&
@@ -34,10 +29,6 @@ export const signUp = async (params: {
   return result;
 };
 
-/**
- * Sign in a user using Better Auth's email-based login.
- * @param params - User email and password
- */
 export const signIn = async (params: {
   password: string;
   username: string;
