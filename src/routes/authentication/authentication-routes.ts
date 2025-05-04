@@ -1,25 +1,26 @@
 import { Hono } from "hono";
-
+import { signIn, signUp } from "./authentication-controllers";
 import {
   LogInWithUsernameAndPasswordError,
   SignUpWithUsernameAndPasswordError,
-} from "../authentication/authentication-types";
-import {
-  logInWithUsernameAndPassword,
-  signUpWithUsernameAndPassword,
-} from "../authentication/authentication-controllers";
+} from "./authentication-types";
 
 export const authenticationRoutes = new Hono();
 
 authenticationRoutes.post("/sign-up", async (c) => {
   const { username, password, name, email } = await c.req.json();
   try {
-    const result = await signUpWithUsernameAndPassword({
+    const result = await signUp({
       username,
       password,
       name,
       email,
     });
+
+    c.header(
+      "Set-Cookie",
+      `__Secure-better-auth.session_token=${result.token}; Path=/; Max-Age=604800; HttpOnly; SameSite=None; Secure=true`
+    );
 
     return c.json({ data: result }, 200);
   } catch (error) {
@@ -34,10 +35,15 @@ authenticationRoutes.post("/log-in", async (c) => {
   try {
     const { username, password } = await c.req.json();
 
-    const result = await logInWithUsernameAndPassword({
+    const result = await signIn({
       username,
       password,
     });
+
+    c.header(
+      "Set-Cookie",
+      `__Secure-better-auth.session_token=${result?.token}; Path=/; Max-Age=604800; HttpOnly; SameSite=None; Secure=true`
+    );
 
     return c.json(
       {
