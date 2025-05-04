@@ -20,19 +20,17 @@ import {
 export const GetPosts = async (parameter: {
   page: number;
   limit: number;
-  userId?: string; // 👈 added userId
+  userId?: string;
 }): Promise<GetPostsResult | Context> => {
   try {
     const { page, limit, userId } = parameter;
     const skip = (page - 1) * limit;
 
-    // checking if the posts exist
     const totalPosts = await prisma.post.count();
     if (totalPosts === 0) {
       throw GetPostsError.POSTS_NOT_FOUND;
     }
 
-    // checking if given page number doesn't exist or is beyond limits
     const totalPages = Math.ceil(totalPosts / limit);
     if (page > totalPages) {
       throw GetPostsError.PAGE_BEYOND_LIMIT;
@@ -116,7 +114,6 @@ export const GetUserPosts = async (parameters: {
   try {
     const { userId, page, limit } = parameters;
 
-    // checking if user has any posts
     const totalPosts = await prisma.post.count({
       where: { userId },
     });
@@ -125,7 +122,6 @@ export const GetUserPosts = async (parameters: {
       throw GetPostsError.POSTS_NOT_FOUND;
     }
 
-    // Check if requested page exists
     const totalPages = Math.ceil(totalPosts / limit);
     if (page > totalPages) {
       throw GetPostsError.PAGE_BEYOND_LIMIT;
@@ -438,9 +434,8 @@ export const SearchPosts = async (parameters: {
       throw SearchPostsError.QUERY_REQUIRED;
     }
 
-    console.log("Received query:", query); // Log the query to confirm
+    console.log("Received query:", query);
 
-    // Add a debug log for the total count query to check database behavior
     const totalPosts = await prisma.post.count({
       where: {
         title: {
@@ -450,7 +445,7 @@ export const SearchPosts = async (parameters: {
       },
     });
 
-    console.log("Total matching posts:", totalPosts); // Log total posts count
+    console.log("Total matching posts:", totalPosts);
 
     if (totalPosts === 0) {
       throw SearchPostsError.POSTS_NOT_FOUND;
@@ -483,7 +478,7 @@ export const SearchPosts = async (parameters: {
       totalPosts,
     };
   } catch (e) {
-    console.error("Error during post search:", e); // More detailed logging for debugging
+    console.error("Error during post search:", e);
     if (
       e === SearchPostsError.QUERY_REQUIRED ||
       e === SearchPostsError.POSTS_NOT_FOUND ||

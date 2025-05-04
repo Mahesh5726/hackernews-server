@@ -22,7 +22,7 @@ export const postsRoutes = new Hono();
 
 postsRoutes.get("/search", async (c) => {
   const { query } = c.req.query();
-  console.log("Received query:", query); // log the query
+  console.log("Received query:", query); 
   const { page, limit } = getPagination(c);
 
   try {

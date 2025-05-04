@@ -15,7 +15,6 @@ usersRoutes.all("/me", sessionMiddleware, async (context) => {
   }
 
   if (context.req.method === "GET") {
-    // Existing GET method to fetch user profile
     try {
       const { page, limit } = getPagination(context);
       const result = await GetMe({ userId, page, limit });
@@ -34,7 +33,6 @@ usersRoutes.all("/me", sessionMiddleware, async (context) => {
       }
     }
   } else if (context.req.method === "POST") {
-    // New POST method to update "About" field
     try {
       const { about } = await context.req.json();
 
@@ -42,7 +40,6 @@ usersRoutes.all("/me", sessionMiddleware, async (context) => {
         return context.json({ error: "About field is required" }, 400);
       }
 
-      // Update the 'about' field in the database
       const updatedUser = await prismaClient.user.update({
         where: { id: userId },
         data: { about },
