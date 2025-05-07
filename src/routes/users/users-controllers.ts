@@ -29,7 +29,6 @@ export const GetMe = async (parameters: {
       where: { id: userId },
       select: {
         id: true,
-        username: true,
         name: true,
         about: true,
         createdAt: true,
@@ -73,7 +72,6 @@ export const GetMe = async (parameters: {
     const result: GetMeResult = {
       user: {
         id: user.id,
-        username: user.username,
         name: user.name || "",
         about: user.about || "",
         createdAt: user.createdAt,

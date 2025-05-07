@@ -2,11 +2,13 @@ import { Hono } from "hono";
 import { GetUsers, GetMe } from "./users-controllers";
 import { GetUsersError, GetMeError } from "./users-types";
 import { getPagination } from "../../extras/pagination";
-import { sessionMiddleware } from "../middleware/session-middleware";
+import { authenticationMiddleware } from "../middleware/session-middleware";
 import { prismaClient } from "../../lib/prisma";
-export const usersRoutes = new Hono();
+import type { SecureSession } from "../middleware/session-middleware";
 
-usersRoutes.all("/me", sessionMiddleware, async (context) => {
+export const usersRoutes = new Hono<SecureSession>();
+
+usersRoutes.all("/me", authenticationMiddleware, async (context) => {
   const user = context.get("user");
   const userId = user?.id;
 
@@ -53,7 +55,7 @@ usersRoutes.all("/me", sessionMiddleware, async (context) => {
   }
 });
 
-usersRoutes.get("/", sessionMiddleware, async (context) => {
+usersRoutes.get("/", authenticationMiddleware, async (context) => {
   try {
     const { page, limit } = getPagination(context);
 
