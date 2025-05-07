@@ -7,14 +7,6 @@ import { username } from "better-auth/plugins";
 const auth = betterAuth({
   baseURL: serverUrl,
   trustedOrigins: [webClientUrl],
-  secret: betterAuthSecret,
-  advanced: {
-    defaultCookieAttributes: {
-      sameSite: "none",
-      secure: true,
-      partitioned: true,
-    },
-  },
   database: prismaAdapter(prismaClient, {
     provider: "postgresql",
   }),

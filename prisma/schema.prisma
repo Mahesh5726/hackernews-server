@@ -10,21 +10,19 @@ datasource db {
 }
 
 model User {
-  id              String    @id @default(uuid())
-  name            String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  username        String    @unique
-  email           String    @unique
-  emailVerified   Boolean
-  image           String?
-  displayUsername String
-  about           String?
-  accounts        Account[]
-  comments        Comment[]
-  likes           Like[]
-  posts           Post[]
-  sessions        Session[]
+  id            String    @id @default(uuid())
+  name          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  email         String    @unique
+  emailVerified Boolean
+  image         String?
+  about         String?
+  accounts      Account[]
+  comments      Comment[]
+  likes         Like[]
+  posts         Post[]
+  sessions      Session[]
 }
 
 model Post {
