@@ -1,5 +1,8 @@
 import { Hono } from "hono";
-import { sessionMiddleware } from "../middleware/session-middleware";
+import {
+  authenticationMiddleware,
+  type SecureSession,
+} from "../middleware/session-middleware";
 import {
   GetPosts,
   GetUserPosts,
@@ -18,7 +21,7 @@ import {
 } from "./posts-types";
 import { getPagination } from "../../extras/pagination";
 
-export const postsRoutes = new Hono();
+export const postsRoutes = new Hono<SecureSession>();
 
 postsRoutes.get("/search", async (c) => {
   const { query } = c.req.query();
@@ -65,9 +68,9 @@ postsRoutes.get("/", async (context) => {
   }
 });
 
-postsRoutes.get("/me", sessionMiddleware, async (c) => {
+postsRoutes.get("/me", authenticationMiddleware, async (c) => {
   try {
-    const userId = c.get("user")?.id;
+    const userId = c.get("user")?.name;
     const { page, limit } = getPagination(c);
     const result = await GetUserPosts({ userId, page, limit });
     return c.json(result, { status: 200 });
@@ -82,7 +85,7 @@ postsRoutes.get("/me", sessionMiddleware, async (c) => {
   }
 });
 
-postsRoutes.post("/", sessionMiddleware, async (c) => {
+postsRoutes.post("/", authenticationMiddleware, async (c) => {
   try {
     const userId = c.get("user").id;
     const { title, content } = await c.req.json();
@@ -112,7 +115,7 @@ postsRoutes.get("/:postId", async (c) => {
   }
 });
 
-postsRoutes.delete("/:postId", sessionMiddleware, async (c) => {
+postsRoutes.delete("/:postId", authenticationMiddleware, async (c) => {
   try {
     const userId = c.get("user").id;
     const postId = c.req.param("postId");
@@ -129,12 +132,12 @@ postsRoutes.delete("/:postId", sessionMiddleware, async (c) => {
   }
 });
 
-postsRoutes.get("/by/:slug", async (c) => {
+postsRoutes.get("/by/:name", async (c) => {
   try {
-    const { slug } = c.req.param();
+    const { name } = c.req.param();
     const { page, limit } = getPagination(c);
 
-    const result = await GetUserPostsBySlug({ slug, page, limit });
+    const result = await GetUserPostsBySlug({ name, page, limit });
 
     if (result.posts.length === 0) {
       return c.json({ error: "This user hasn't created any posts yet!" }, 404);

@@ -1,5 +1,8 @@
 import { Hono } from "hono";
-import { sessionMiddleware } from "../middleware/session-middleware";
+import {
+  authenticationMiddleware,
+  type SecureSession,
+} from "../middleware/session-middleware";
 import {
   GetLikes,
   CreateLike,
@@ -16,7 +19,7 @@ import {
 } from "./likes-types";
 import { getPagination } from "../../extras/pagination";
 
-export const likesRoutes = new Hono();
+export const likesRoutes = new Hono<SecureSession>();
 
 likesRoutes.get("/on/:postId", async (c) => {
   try {
@@ -38,7 +41,7 @@ likesRoutes.get("/on/:postId", async (c) => {
   }
 });
 
-likesRoutes.post("/on/:postId", sessionMiddleware, async (c) => {
+likesRoutes.post("/on/:postId", authenticationMiddleware, async (c) => {
   try {
     const postId = c.req.param("postId");
     const userId = c.get("user").id;
@@ -55,7 +58,7 @@ likesRoutes.post("/on/:postId", sessionMiddleware, async (c) => {
   }
 });
 
-likesRoutes.delete("/on/:postId", sessionMiddleware, async (c) => {
+likesRoutes.delete("/on/:postId", authenticationMiddleware, async (c) => {
   try {
     const postId = c.req.param("postId");
     const userId = c.get("user").id;
@@ -75,7 +78,7 @@ likesRoutes.delete("/on/:postId", sessionMiddleware, async (c) => {
   }
 });
 
-likesRoutes.get("/me", sessionMiddleware, async (c) => {
+likesRoutes.get("/me", authenticationMiddleware, async (c) => {
   try {
     const userId = c.get("user")?.id;
     const result = await GetLikesOnMe({ userId });
@@ -98,7 +101,7 @@ likesRoutes.get("/by/:slug", async (c) => {
   try {
     const { slug } = c.req.param();
     const { page, limit } = getPagination(c);
-    const result = await GetLikesOnUser({ username: slug, page, limit });
+    const result = await GetLikesOnUser({ name: slug, page, limit });
     return c.json(result, 200);
   } catch (error) {
     if (error === GetLikesOnMeError.LIKES_NOT_FOUND) {

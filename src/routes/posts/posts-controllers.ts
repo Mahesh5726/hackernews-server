@@ -44,7 +44,6 @@ export const GetPosts = async (parameter: {
         author: {
           select: {
             id: true,
-            username: true,
             name: true,
           },
         },
@@ -57,7 +56,7 @@ export const GetPosts = async (parameter: {
           include: {
             user: {
               select: {
-                username: true,
+                id: true,
                 name: true,
               },
             },
@@ -75,7 +74,7 @@ export const GetPosts = async (parameter: {
       updatedAt: post.updatedAt,
       userId: post.author.id,
       user: {
-        username: post.author.username,
+        id: post.author.id,
         name: post.author.name,
       },
       likeCount: post.likes.length,
@@ -87,7 +86,7 @@ export const GetPosts = async (parameter: {
         content: comment.content,
         createdAt: comment.createdAt,
         user: {
-          username: comment.user.username,
+          id: comment.user.id,
           name: comment.user.name,
         },
       })),
@@ -134,7 +133,7 @@ export const GetUserPosts = async (parameters: {
       include: {
         author: {
           select: {
-            username: true,
+            id: true,
             name: true,
           },
         },
@@ -179,7 +178,7 @@ export const CreatePost = async (parameters: {
       include: {
         author: {
           select: {
-            username: true,
+            id: true,
             name: true,
           },
         },
@@ -240,7 +239,7 @@ export const GetPostById = async (parameters: {
       include: {
         author: {
           select: {
-            username: true,
+            id: true,
             name: true,
           },
         },
@@ -280,7 +279,7 @@ export const GetCommentsByPostId = async (parameters: {
       include: {
         user: {
           select: {
-            username: true,
+            id: true,
             name: true,
           },
         },
@@ -310,7 +309,7 @@ export const CreateCommentByPostId = async (parameters: {
       include: {
         author: {
           select: {
-            username: true,
+            id: true,
             name: true,
           },
         },
@@ -338,7 +337,7 @@ export const CreateCommentByPostId = async (parameters: {
       include: {
         user: {
           select: {
-            username: true,
+            id: true,
             name: true,
           },
         },
@@ -359,15 +358,15 @@ export const CreateCommentByPostId = async (parameters: {
 };
 
 export const GetUserPostsBySlug = async (parameters: {
-  slug: string;
+  name: string;
   page: number;
   limit: number;
 }): Promise<GetPostsResult> => {
   try {
-    const { slug, page, limit } = parameters;
+    const { name, page, limit } = parameters;
 
-    const user = await prisma.user.findUnique({
-      where: { username: slug },
+    const user = await prisma.user.findFirst({
+      where: { name },
       select: {
         id: true,
       },
@@ -376,7 +375,6 @@ export const GetUserPostsBySlug = async (parameters: {
     if (!user) {
       throw GetUserPostsBySlugError.USER_NOT_FOUND;
     }
-
     const totalPosts = await prisma.post.count({
       where: { userId: user.id },
     });
@@ -399,7 +397,7 @@ export const GetUserPostsBySlug = async (parameters: {
       include: {
         author: {
           select: {
-            username: true,
+            id: true,
             name: true,
           },
         },

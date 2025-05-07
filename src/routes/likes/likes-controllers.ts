@@ -48,7 +48,7 @@ export const GetLikes = async (parameters: {
       include: {
         user: {
           select: {
-            username: true,
+            id: true,
             name: true,
           },
         },
@@ -117,7 +117,7 @@ export const CreateLike = async (parameters: {
       include: {
         user: {
           select: {
-            username: true,
+            id: true,
             name: true,
           },
         },
@@ -231,12 +231,12 @@ export const GetLikesOnMe = async (parameters: {
 };
 
 export const GetLikesOnUser = async (parameters: {
-  username: string;
+  name: string;
   page: number;
   limit: number;
 }): Promise<GetLikesOnUserResult> => {
   try {
-    const { username, page, limit } = parameters;
+    const { name, page, limit } = parameters;
 
     if (page < 1 || limit < 1) {
       throw new Error("Page or limit is below 1");
@@ -244,8 +244,8 @@ export const GetLikesOnUser = async (parameters: {
 
     const skip = (page - 1) * limit;
 
-    const user = await prisma.user.findUnique({
-      where: { username },
+    const user = await prisma.user.findFirst({
+      where: { name },
       select: {
         id: true,
       },
