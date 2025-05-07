@@ -11,7 +11,7 @@ export const allRoutes = new Hono();
 
 allRoutes.use(
   cors({
-    origin: "http://localhost:4000",
+    origin: webClientUrl,
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Authorization", "Content-Type"],
     exposeHeaders: ["Content-Length"],
