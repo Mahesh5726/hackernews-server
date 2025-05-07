@@ -1,5 +1,8 @@
 import { Hono } from "hono";
-import { sessionMiddleware } from "../middleware/session-middleware";
+import {
+  authenticationMiddleware,
+  type SecureSession,
+} from "../middleware/session-middleware";
 import {
   GetComments,
   CreateComment,
@@ -19,7 +22,7 @@ import {
   GetCommentsOnUserError,
 } from "./comments-types";
 import { getPagination } from "../../extras/pagination";
-export const commentsRoutes = new Hono();
+export const commentsRoutes = new Hono<SecureSession>();
 
 commentsRoutes.get("/on/:postId", async (c) => {
   try {
@@ -38,7 +41,7 @@ commentsRoutes.get("/on/:postId", async (c) => {
   }
 });
 
-commentsRoutes.post("/on/:postId", sessionMiddleware, async (c) => {
+commentsRoutes.post("/on/:postId", authenticationMiddleware, async (c) => {
   try {
     const postId = c.req.param("postId");
     const userId = c.get("user").id;
@@ -56,7 +59,7 @@ commentsRoutes.post("/on/:postId", sessionMiddleware, async (c) => {
   }
 });
 
-commentsRoutes.patch("/:commentId", sessionMiddleware, async (c) => {
+commentsRoutes.patch("/:commentId", authenticationMiddleware, async (c) => {
   try {
     const commentId = c.req.param("commentId");
     const userId = c.get("user").id;
@@ -83,7 +86,7 @@ commentsRoutes.patch("/:commentId", sessionMiddleware, async (c) => {
   }
 });
 
-commentsRoutes.delete("/:commentId", sessionMiddleware, async (c) => {
+commentsRoutes.delete("/:commentId", authenticationMiddleware, async (c) => {
   try {
     const commentId = c.req.param("commentId");
     const userId = c.get("user").id;
@@ -119,7 +122,7 @@ commentsRoutes.get("/on/posts", async (c) => {
   }
 });
 
-commentsRoutes.get("/me", sessionMiddleware, async (c) => {
+commentsRoutes.get("/me", authenticationMiddleware, async (c) => {
   try {
     const userId = c.get("user")?.id;
     const result = await GetCommentsOnMe({ userId });
@@ -142,7 +145,7 @@ commentsRoutes.get("/by/:slug", async (c) => {
   try {
     const { slug } = c.req.param();
     const { page, limit } = getPagination(c);
-    const result = await GetCommentsOnUser({ username: slug, page, limit });
+    const result = await GetCommentsOnUser({ name: slug, page, limit });
     return c.json(result, 200);
   } catch (error) {
     if (error === GetCommentsOnMeError.COMMENTS_NOT_FOUND) {

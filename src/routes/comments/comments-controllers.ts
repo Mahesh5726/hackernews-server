@@ -53,7 +53,6 @@ export const GetComments = async (parameters: {
       include: {
         user: {
           select: {
-            username: true,
             name: true,
           },
         },
@@ -90,7 +89,6 @@ export const CreateComment = async (parameters: {
       include: {
         author: {
           select: {
-            username: true,
             name: true,
           },
         },
@@ -109,7 +107,6 @@ export const CreateComment = async (parameters: {
       include: {
         user: {
           select: {
-            username: true,
             name: true,
           },
         },
@@ -166,7 +163,6 @@ export const UpdateComment = async (parameters: {
       include: {
         user: {
           select: {
-            username: true,
             name: true,
           },
         },
@@ -257,7 +253,6 @@ export const GetCommentsOnPosts = async (parameters: {
       include: {
         user: {
           select: {
-            username: true,
             name: true,
           },
         },
@@ -316,15 +311,15 @@ export const GetCommentsOnMe = async (parameters: {
 };
 
 export const GetCommentsOnUser = async (parameters: {
-  username: string;
+  name: string;
   page: number;
   limit: number;
 }): Promise<GetCommentsOnUserResult> => {
   try {
-    const { username, page, limit } = parameters;
+    const { name, page, limit } = parameters;
 
-    const user = await prisma.user.findUnique({
-      where: { username },
+    const user = await prisma.user.findFirst({
+      where: { name },
       select: {
         id: true,
       },
