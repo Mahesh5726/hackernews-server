@@ -41,7 +41,7 @@ export const GetComments = async (parameters: {
     });
 
     const totalPages = Math.ceil(totalComments / limit);
-    if (page > totalPages) {
+    if (page > totalPages && totalComments > 0) {
       throw GetCommentsError.PAGE_BEYOND_LIMIT;
     }
 
