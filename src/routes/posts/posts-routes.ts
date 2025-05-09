@@ -23,7 +23,7 @@ import { getPagination } from "../../extras/pagination";
 
 export const postsRoutes = new Hono<SecureSession>();
 
-postsRoutes.get("/search", authenticationMiddleware, async (c) => {
+postsRoutes.get("/search", async (c) => {
   const { query } = c.req.query();
   const { page, limit } = getPagination(c);
 
@@ -35,10 +35,7 @@ postsRoutes.get("/search", authenticationMiddleware, async (c) => {
       return c.json({ error: "Query is required!" }, 400);
     }
     if (error === SearchPostsError.POSTS_NOT_FOUND) {
-      return c.json({ error: "No posts found!" }, 404);
-    }
-    if (error === SearchPostsError.USERS_NOT_FOUND) {
-      return c.json({ error: "No users found!" }, 404);
+      return c.json({ error: "No posts or users found!" }, 404);
     }
     return c.json({ error: "Unknown error!" }, 500);
   }

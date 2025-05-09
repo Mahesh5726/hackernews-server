@@ -436,26 +436,12 @@ export const SearchPostsAndUsers = async ({
 
   const skip = (page - 1) * limit;
 
-  const postWhere = {
-    OR: [
-      { title: { contains: query, mode: "insensitive" } },
-      { content: { contains: query, mode: "insensitive" } },
-    ],
-  };
-
-  const userWhere = {
-    OR: [
-      { name: { contains: query, mode: "insensitive" } },
-      { email: { contains: query, mode: "insensitive" } },
-    ],
-  };
-
-  const [posts, users, totalPosts, totalUsers] = await Promise.all([
+  const [posts, users] = await Promise.all([
     prisma.post.findMany({
       where: {
         OR: [
-          { title: { contains: query, mode: "insensitive" as const } },
-          { content: { contains: query, mode: "insensitive" as const } },
+          { title: { contains: query, mode: "insensitive" } },
+          { content: { contains: query, mode: "insensitive" } },
         ],
       },
       skip,
@@ -465,28 +451,11 @@ export const SearchPostsAndUsers = async ({
     prisma.user.findMany({
       where: {
         OR: [
-          { name: { contains: query, mode: "insensitive" as const } },
-          { email: { contains: query, mode: "insensitive" as const } },
+          { name: { contains: query, mode: "insensitive" } },
         ],
       },
       skip,
       take: limit,
-    }),
-    prisma.post.count({ 
-      where: {
-        OR: [
-          { title: { contains: query, mode: "insensitive" as const } },
-          { content: { contains: query, mode: "insensitive" as const } },
-        ],
-      } 
-    }),
-    prisma.user.count({ 
-      where: {
-        OR: [
-          { name: { contains: query, mode: "insensitive" as const } },
-          { email: { contains: query, mode: "insensitive" as const } },
-        ],
-      }
     }),
   ]);
 
@@ -500,10 +469,7 @@ export const SearchPostsAndUsers = async ({
     pagination: {
       page,
       limit,
-      totalPosts,
-      totalUsers,
-      totalPostPages: Math.ceil(totalPosts / limit),
-      totalUserPages: Math.ceil(totalUsers / limit),
     },
   };
 };
+
