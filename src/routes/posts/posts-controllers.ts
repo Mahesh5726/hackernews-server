@@ -420,71 +420,90 @@ export const GetUserPostsBySlug = async (parameters: {
   }
 };
 
-export const SearchPosts = async (parameters: {
+
+export const SearchPostsAndUsers = async ({
+  query,
+  page = 1,
+  limit = 10,
+}: {
   query: string;
   page: number;
   limit: number;
-}): Promise<SearchPostsResult> => {
-  try {
-    const { query, page, limit } = parameters;
-
-    if (typeof query !== "string" || query.trim() === "") {
-      throw SearchPostsError.QUERY_REQUIRED;
-    }
-
-    console.log("Received query:", query);
-
-    const totalPosts = await prisma.post.count({
-      where: {
-        title: {
-          contains: query,
-          mode: "insensitive",
-        },
-      },
-    });
-
-    console.log("Total matching posts:", totalPosts);
-
-    if (totalPosts === 0) {
-      throw SearchPostsError.POSTS_NOT_FOUND;
-    }
-
-    const totalPages = Math.ceil(totalPosts / limit);
-
-    if (page > totalPages) {
-      throw SearchPostsError.PAGE_BEYOND_LIMIT;
-    }
-
-    const posts = await prisma.post.findMany({
-      where: {
-        title: {
-          contains: query,
-          mode: "insensitive",
-        },
-      },
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-
-    return {
-      posts,
-      page,
-      totalPages,
-      totalPosts,
-    };
-  } catch (e) {
-    console.error("Error during post search:", e);
-    if (
-      e === SearchPostsError.QUERY_REQUIRED ||
-      e === SearchPostsError.POSTS_NOT_FOUND ||
-      e === SearchPostsError.PAGE_BEYOND_LIMIT
-    ) {
-      throw e;
-    }
-
-    throw SearchPostsError.UNKNOWN;
+}) => {
+  if (!query || query.trim() === "") {
+    throw SearchPostsError.QUERY_REQUIRED;
   }
+
+  const skip = (page - 1) * limit;
+
+  const postWhere = {
+    OR: [
+      { title: { contains: query, mode: "insensitive" } },
+      { content: { contains: query, mode: "insensitive" } },
+    ],
+  };
+
+  const userWhere = {
+    OR: [
+      { name: { contains: query, mode: "insensitive" } },
+      { email: { contains: query, mode: "insensitive" } },
+    ],
+  };
+
+  const [posts, users, totalPosts, totalUsers] = await Promise.all([
+    prisma.post.findMany({
+      where: {
+        OR: [
+          { title: { contains: query, mode: "insensitive" as const } },
+          { content: { contains: query, mode: "insensitive" as const } },
+        ],
+      },
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.user.findMany({
+      where: {
+        OR: [
+          { name: { contains: query, mode: "insensitive" as const } },
+          { email: { contains: query, mode: "insensitive" as const } },
+        ],
+      },
+      skip,
+      take: limit,
+    }),
+    prisma.post.count({ 
+      where: {
+        OR: [
+          { title: { contains: query, mode: "insensitive" as const } },
+          { content: { contains: query, mode: "insensitive" as const } },
+        ],
+      } 
+    }),
+    prisma.user.count({ 
+      where: {
+        OR: [
+          { name: { contains: query, mode: "insensitive" as const } },
+          { email: { contains: query, mode: "insensitive" as const } },
+        ],
+      }
+    }),
+  ]);
+
+  if (posts.length === 0 && users.length === 0) {
+    throw SearchPostsError.POSTS_NOT_FOUND;
+  }
+
+  return {
+    posts,
+    users,
+    pagination: {
+      page,
+      limit,
+      totalPosts,
+      totalUsers,
+      totalPostPages: Math.ceil(totalPosts / limit),
+      totalUserPages: Math.ceil(totalUsers / limit),
+    },
+  };
 };

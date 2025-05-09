@@ -10,7 +10,7 @@ import {
   DeletePost,
   GetPostById,
   GetUserPostsBySlug,
-  SearchPosts,
+  SearchPostsAndUsers,
 } from "./posts-controllers";
 import {
   GetPostsError,
@@ -23,23 +23,22 @@ import { getPagination } from "../../extras/pagination";
 
 export const postsRoutes = new Hono<SecureSession>();
 
-postsRoutes.get("/search", async (c) => {
+postsRoutes.get("/search", authenticationMiddleware, async (c) => {
   const { query } = c.req.query();
-  console.log("Received query:", query); 
   const { page, limit } = getPagination(c);
 
   try {
-    const result = await SearchPosts({ query, page, limit });
+    const result = await SearchPostsAndUsers({ query, page, limit });
     return c.json(result, 200);
   } catch (error) {
     if (error === SearchPostsError.QUERY_REQUIRED) {
       return c.json({ error: "Query is required!" }, 400);
     }
     if (error === SearchPostsError.POSTS_NOT_FOUND) {
-      return c.json({ error: "Post not found!" }, 404);
+      return c.json({ error: "No posts found!" }, 404);
     }
-    if (error === SearchPostsError.PAGE_BEYOND_LIMIT) {
-      return c.json({ error: "No posts found on the requested page!" }, 404);
+    if (error === SearchPostsError.USERS_NOT_FOUND) {
+      return c.json({ error: "No users found!" }, 404);
     }
     return c.json({ error: "Unknown error!" }, 500);
   }
