@@ -34,6 +34,9 @@ export const GetMe = async (parameters: {
         createdAt: true,
         updatedAt: true,
         posts: {
+          orderBy: {
+            createdAt: 'desc'
+          },
           select: {
             id: true,
             title: true,
@@ -44,6 +47,9 @@ export const GetMe = async (parameters: {
           },
         },
         comments: {
+          orderBy: {
+            createdAt: 'desc'
+          },
           select: {
             id: true,
             content: true,
@@ -54,6 +60,9 @@ export const GetMe = async (parameters: {
           },
         },
         likes: {
+          orderBy: {
+            createdAt: 'desc'
+          },
           select: {
             id: true,
             postId: true,
